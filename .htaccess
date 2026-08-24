@@ -1,0 +1,78 @@
+# =============================================================================
+#  Viovas — configurare Apache
+#  Urcă acest fișier în rădăcina site-ului, alături de index.html.
+#  Dacă hostingul tău nu e Apache (Nginx, Netlify, Vercel), vezi _redirects.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+#  1. Redirecționări 301 de la vechile adrese WordPress către noile pagini.
+#     Fără acestea pierzi poziționarea în Google pentru paginile existente.
+# -----------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  RewriteRule ^despre-noi/?$                  /despre.html                      [R=301,L]
+  RewriteRule ^categorii/?$                   /categorii.html                   [R=301,L]
+  RewriteRule ^contact/?$                     /contact.html                     [R=301,L]
+  RewriteRule ^politica-confidentialitate/?$  /politica-confidentialitate.html  [R=301,L]
+  RewriteRule ^politica-de-cookies/?$         /politica-de-cookies.html         [R=301,L]
+
+  # Resturi din instalarea WordPress
+  RewriteRule ^(wp-admin|wp-login\.php|xmlrpc\.php|wp-json)  /  [R=301,L]
+  RewriteRule ^author/.*$                     /                                 [R=301,L]
+  RewriteRule ^feed/?$                        /                                 [R=301,L]
+
+  # Forțează HTTPS și www
+  RewriteCond %{HTTPS} off
+  RewriteRule ^(.*)$ https://www.viovas.ro/$1 [R=301,L]
+  RewriteCond %{HTTP_HOST} ^viovas\.ro$ [NC]
+  RewriteRule ^(.*)$ https://www.viovas.ro/$1 [R=301,L]
+</IfModule>
+
+ErrorDocument 404 /404.html
+
+# -----------------------------------------------------------------------------
+#  2. Compresie
+# -----------------------------------------------------------------------------
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml
+  AddOutputFilterByType DEFLATE application/javascript application/json
+  AddOutputFilterByType DEFLATE image/svg+xml application/manifest+json
+</IfModule>
+
+# -----------------------------------------------------------------------------
+#  3. Cache. HTML scurt (ca modificările să se vadă imediat),
+#     restul pe termen lung.
+# -----------------------------------------------------------------------------
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresDefault                          "access plus 1 month"
+  ExpiresByType text/html                 "access plus 0 seconds"
+  ExpiresByType application/xml           "access plus 0 seconds"
+  ExpiresByType text/css                  "access plus 1 year"
+  ExpiresByType application/javascript    "access plus 1 year"
+  ExpiresByType font/woff2                "access plus 1 year"
+  ExpiresByType image/webp                "access plus 1 year"
+  ExpiresByType image/png                 "access plus 1 year"
+  ExpiresByType image/jpeg                "access plus 1 year"
+  ExpiresByType video/webm                "access plus 1 year"
+  ExpiresByType video/mp4                 "access plus 1 year"
+</IfModule>
+
+# -----------------------------------------------------------------------------
+#  4. Securitate de bază
+# -----------------------------------------------------------------------------
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
+Options -Indexes
+
+<IfModule mod_mime.c>
+  AddType font/woff2 .woff2
+  AddType image/webp .webp
+  AddType application/manifest+json .webmanifest
+</IfModule>

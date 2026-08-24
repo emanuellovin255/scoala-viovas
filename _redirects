@@ -1,0 +1,17 @@
+# Redirecționări pentru Netlify / Cloudflare Pages.
+# Pe Apache (cPanel, hosting clasic) se folosește .htaccess în loc.
+
+/despre-noi                  /despre.html                      301
+/despre-noi/                 /despre.html                      301
+/categorii                   /categorii.html                   301
+/categorii/                  /categorii.html                   301
+/contact                     /contact.html                     301
+/contact/                    /contact.html                     301
+/politica-confidentialitate  /politica-confidentialitate.html  301
+/politica-confidentialitate/ /politica-confidentialitate.html  301
+/politica-de-cookies         /politica-de-cookies.html         301
+/politica-de-cookies/        /politica-de-cookies.html         301
+/wp-admin/*                  /                                 301
+/wp-json/*                   /                                 301
+/author/*                    /                                 301
+/feed                        /                                 301

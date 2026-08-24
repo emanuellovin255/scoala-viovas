@@ -1,0 +1,14 @@
+{
+  "name": "Viovas — Școala auto Iași",
+  "short_name": "Viovas",
+  "description": "Performanță în pilotaj din 2006. Categoriile A, B, C, CE și D.",
+  "lang": "ro",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0D0F",
+  "theme_color": "#0B0D0F",
+  "icons": [
+    { "src": "/assets/img/favicon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/img/favicon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

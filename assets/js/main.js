@@ -129,7 +129,11 @@
       var target = parseFloat(el.getAttribute('data-count'));
       var decimals = (el.getAttribute('data-decimals') | 0);
       if (isNaN(target)) return;
-      if (reduced) { el.textContent = target.toFixed(decimals).replace('.', ','); return; }
+      // Un an nu se numără de la zero; se afișează direct.
+      if (reduced || el.hasAttribute('data-count-static')) {
+        el.textContent = target.toFixed(decimals).replace('.', ',');
+        return;
+      }
 
       var dur = 1500, t0 = null;
       function frame(t) {
@@ -377,8 +381,83 @@
      ------------------------------------------------------------------------ */
   $$('[data-year]').forEach(function (n) { n.textContent = new Date().getFullYear(); });
 
+
   /* ------------------------------------------------------------------------
-     12. Video hero — pornire sigură, pauză când nu e vizibil
+     12. Traseu — marcajul se desenează, pastilele se aprind pe rând
+     ------------------------------------------------------------------------ */
+  (function roadway() {
+    var roads = $$('[data-roadway]');
+    if (!roads.length) return;
+
+    if (reduced || !('IntersectionObserver' in window)) {
+      roads.forEach(function (road) {
+        road.style.setProperty('--progress', '1');
+        $$('.step', road).forEach(function (s) { s.classList.add('is-passed'); });
+      });
+      return;
+    }
+
+    roads.forEach(function (road) {
+      var steps = $$('.step', road);
+      if (!steps.length) return;
+
+      // Fiecare pas aprins înaintează marcajul cu o fracțiune din traseu.
+      var passed = 0;
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-passed');
+          io.unobserve(entry.target);
+          passed++;
+          road.style.setProperty('--progress', (passed / steps.length).toFixed(3));
+        });
+      }, { rootMargin: '0px 0px -35% 0px', threshold: 0.01 });
+
+      steps.forEach(function (s) { io.observe(s); });
+    });
+  })();
+
+  /* ------------------------------------------------------------------------
+     13. Bandă derulantă — se dublează conținutul pentru buclă continuă
+     ------------------------------------------------------------------------ */
+  (function marquee() {
+    $$('.marquee__track').forEach(function (track) {
+      if (track.getAttribute('data-doubled') === 'true') return;
+      // Copia e pur decorativă: se ascunde de la cititoarele de ecran.
+      // Lista se fotografiază întâi: `children` e vie și ar crește la infinit.
+      Array.prototype.slice.call(track.children).forEach(function (child) {
+        var copy = child.cloneNode(true);
+        copy.setAttribute('aria-hidden', 'true');
+        track.appendChild(copy);
+      });
+      track.setAttribute('data-doubled', 'true');
+    });
+  })();
+
+  /* ------------------------------------------------------------------------
+     14. Întrebări frecvente — se închid celelalte la deschidere
+     ------------------------------------------------------------------------ */
+  (function faq() {
+    var groups = $$('[data-faq]');
+    if (!groups.length) return;
+
+    groups.forEach(function (group) {
+      var items = $$('details.faq__item', group);
+      if (items.length < 2) return;
+
+      items.forEach(function (item) {
+        item.addEventListener('toggle', function () {
+          if (!item.open) return;
+          items.forEach(function (other) {
+            if (other !== item) other.open = false;
+          });
+        });
+      });
+    });
+  })();
+
+  /* ------------------------------------------------------------------------
+     15. Video hero — pornire sigură, pauză când nu e vizibil
      ------------------------------------------------------------------------ */
   (function heroVideo() {
     var v = $('.hero__media video');

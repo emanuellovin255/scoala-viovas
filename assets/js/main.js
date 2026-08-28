@@ -457,25 +457,97 @@
   })();
 
   /* ------------------------------------------------------------------------
-     15. Video hero — pornire sigură, pauză când nu e vizibil
+     15. Video — pornire fără sunet, control de sunet și de redare
+     Toate filmările pornesc pe mut (cerință de autoplay în browsere). Butonul
+     cu difuzor pornește sunetul doar când vizitatorul îl cere.
      ------------------------------------------------------------------------ */
-  (function heroVideo() {
-    var v = $('.hero__media video');
-    if (!v) return;
+  (function videos() {
+    var vids = $$('video[data-autoplay]');
+    var btns = $$('[data-sound], [data-play]');
+    if (!vids.length && !btns.length) return;
 
-    if (reduced) { v.remove(); return; }
-
-    var p = v.play();
-    if (p && typeof p.catch === 'function') {
-      p.catch(function () { /* autoplay blocat: rămâne posterul */ });
+    function target(btn) {
+      return document.getElementById(btn.getAttribute('aria-controls'));
+    }
+    function play(v) {
+      var p = v.play();
+      if (p && typeof p.catch === 'function') { p.catch(function () {}); }
+    }
+    function syncPlayBtn(v) {
+      $$('[data-play]').forEach(function (b) {
+        if (target(b) === v) { b.setAttribute('aria-pressed', String(!v.paused)); }
+      });
     }
 
-    if (!('IntersectionObserver' in window)) return;
-    new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) { var q = v.play(); if (q && q.catch) q.catch(function () {}); }
-        else { v.pause(); }
-      });
-    }, { threshold: 0.05 }).observe(v);
+    /* Sub „reduced motion" nimic nu pornește singur: rămâne posterul.
+       Butonul hero dispare (nu are ce controla), iar cadrele .vid pot fi pornite manual. */
+    if (reduced) {
+      vids.forEach(function (v) { v.removeAttribute('autoplay'); v.pause(); });
+    }
+
+    /* Butoanele apar doar când există JS care să le pună în funcțiune. */
+    btns.forEach(function (btn) {
+      var v = target(btn);
+      if (!v) return;
+      if (reduced && btn.classList.contains('sound-btn--hero')) return;
+      btn.hidden = false;
+    });
+    $$('.vid__ctrls').forEach(function (box) { box.hidden = false; });
+
+    btns.forEach(function (btn) {
+      var v = target(btn);
+      if (!v) return;
+
+      if (btn.hasAttribute('data-sound')) {
+        v.muted = true;
+        btn.addEventListener('click', function () {
+          v.muted = !v.muted;
+          if (!v.muted) {
+            v.volume = 1;
+            // Dacă sunetul e cerut, filmarea trebuie și să ruleze.
+            play(v);
+            // Un singur film cu sunet la un moment dat.
+            $$('video').forEach(function (other) { if (other !== v) { other.muted = true; } });
+            $$('[data-sound]').forEach(function (b) {
+              if (b !== btn) { b.setAttribute('aria-pressed', 'false'); setSoundLabel(b, false); }
+            });
+          }
+          btn.setAttribute('aria-pressed', String(!v.muted));
+          setSoundLabel(btn, !v.muted);
+          syncPlayBtn(v);
+        });
+      }
+
+      if (btn.hasAttribute('data-play')) {
+        btn.addEventListener('click', function () {
+          if (v.paused) { play(v); } else { v.pause(); }
+          syncPlayBtn(v);
+        });
+        v.addEventListener('play', function () { syncPlayBtn(v); });
+        v.addEventListener('pause', function () { syncPlayBtn(v); });
+        btn.setAttribute('aria-pressed', String(!v.paused));
+      }
+    });
+
+    function setSoundLabel(btn, on) {
+      var lbl = $('.sound-btn__lbl', btn);
+      if (lbl) { lbl.textContent = on ? 'Oprește sunetul' : 'Pornește sunetul'; }
+    }
+
+    if (reduced) return;
+
+    /* Pornire la intrarea în ecran, pauză când ies din el — economisește baterie
+       și lățime de bandă. Filmarea cu sunet pornit nu se oprește singură. */
+    vids.forEach(function (v) {
+      v.muted = true;
+      if (!('IntersectionObserver' in window)) { play(v); return; }
+
+      new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) { play(v); }
+          else if (v.muted) { v.pause(); }
+        });
+      }, { threshold: 0.25 }).observe(v);
+    });
   })();
 })();

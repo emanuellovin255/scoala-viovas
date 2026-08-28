@@ -25,7 +25,7 @@
 
 <link rel="preload" href="assets/fonts/mulish-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/mulish-latin-ext.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/style.css?v=2">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -71,6 +71,10 @@
 <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></symbol>
 <symbol id="i-cap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 9 12 4 2 9l10 5z"/><path d="M6 11.5V16c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5v-4.5"/></symbol>
 <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+<symbol id="i-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></symbol>
+<symbol id="i-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6M21 9l-5 6"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 0 0 1.52.86l11.14-6.86a1 1 0 0 0 0-1.72L9.52 4.28A1 1 0 0 0 8 5.14z"/></symbol>
+<symbol id="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1.2"/><rect x="14" y="4" width="4" height="16" rx="1.2"/></symbol>
 </svg>
 
 <!-- ===================== ANTET ===================== -->
@@ -163,6 +167,7 @@
             <li><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg> Avans <strong>1000 lei</strong></li>
             <li><svg class="ico" aria-hidden="true"><use href="#i-bike"/></svg> Motociclete Honda, categoriile A, A1, A2 și 125B</li>
           </ul>
+          <p class="card-vid"><a href="#v-cat-a"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg> Vezi filmul categoriei A</a></p>
           <div class="price-card__foot"><a class="btn btn--sm btn--block" href="contact.html">Mă înscriu</a></div>
         </article>
 
@@ -189,6 +194,7 @@
             <li><svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg> Avans <strong>1000 lei</strong></li>
             <li><svg class="ico" aria-hidden="true"><use href="#i-truck"/></svg> Camion MAN, cutie manuală</li>
           </ul>
+          <p class="card-vid"><a href="#v-cat-c"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg> Vezi filmul categoriei C</a></p>
           <div class="price-card__foot"><a class="btn btn--sm btn--block" href="contact.html">Mă înscriu</a></div>
         </article>
 
@@ -249,6 +255,68 @@
         <svg class="ico" aria-hidden="true"><use href="#i-info"/></svg>
         <span>Tarifele afișate sunt cele practicate de Viovas și nu se schimbă după semnarea contractului. Actele necesare le găsești <a href="#acte">mai jos, pe etape</a>. Pentru ce include fiecare pachet — ore incluse, dosar, taxe de examen — sună-ne la <a href="tel:+40232234000">0232 234 000</a> sau scrie-ne la <a href="mailto:contact@viovas.ro">contact@viovas.ro</a>.</span>
       </p>
+    </div>
+  </section>
+
+  <!-- ===================== VIDEO PE CATEGORII ===================== -->
+  <section class="section" id="video-categorii">
+    <div class="wrap">
+      <div class="sec-head" data-reveal>
+        <p class="eyebrow">Video</p>
+        <h2>Vezi pe ce înveți, înainte să te înscrii</h2>
+        <p>Filmările pornesc fără sunet. Apasă pe difuzor dacă vrei să auzi și coloana sonoră.</p>
+      </div>
+
+      <div class="vid-grid">
+        <figure class="vid vid--card" data-reveal>
+          <video id="v-cat-a" class="vid__el" data-autoplay muted loop playsinline preload="none"
+                 poster="assets/img/cat-a-poster.jpg" tabindex="-1" aria-label="Filmare cursuri categoria A: motociclete Honda și pregătire pe poligonul Viovas">
+            <source src="assets/video/viovas-cat-a.mp4" type="video/mp4">
+          </video>
+          <div class="vid__ctrls" hidden>
+            <button class="vid__btn" type="button" data-play aria-controls="v-cat-a" aria-pressed="true">
+              <svg class="ico vid__btn-play" aria-hidden="true"><use href="#i-play"/></svg>
+              <svg class="ico vid__btn-pause" aria-hidden="true"><use href="#i-pause"/></svg>
+              <span class="visually-hidden">Pornește sau oprește videoul</span>
+            </button>
+            <button class="sound-btn sound-btn--sm" type="button" data-sound aria-controls="v-cat-a" aria-pressed="false">
+              <svg class="ico sound-btn__on" aria-hidden="true"><use href="#i-sound-on"/></svg>
+              <svg class="ico sound-btn__off" aria-hidden="true"><use href="#i-sound-off"/></svg>
+              <span class="sound-btn__lbl">Pornește sunetul</span>
+            </button>
+          </div>
+          <figcaption class="vid__cap">
+            <p class="eyebrow">Categoria A / A1</p>
+            <h3>Cursuri pe motocicletă</h3>
+            <p>Poligon modern, motociclete de ultimă generație și instructori care merg alături de tine, tură după tură.</p>
+            <a class="arrow-link" href="#cat-a">Vezi tariful categoriei A <svg class="ico" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          </figcaption>
+        </figure>
+        <figure class="vid vid--card" data-reveal>
+          <video id="v-cat-c" class="vid__el" data-autoplay muted loop playsinline preload="none"
+                 poster="assets/img/cat-c-poster.jpg" tabindex="-1" aria-label="Filmare cursuri categoria C și CE: camion Mercedes-Benz Atego al școlii Viovas">
+            <source src="assets/video/viovas-cat-c.mp4" type="video/mp4">
+          </video>
+          <div class="vid__ctrls" hidden>
+            <button class="vid__btn" type="button" data-play aria-controls="v-cat-c" aria-pressed="true">
+              <svg class="ico vid__btn-play" aria-hidden="true"><use href="#i-play"/></svg>
+              <svg class="ico vid__btn-pause" aria-hidden="true"><use href="#i-pause"/></svg>
+              <span class="visually-hidden">Pornește sau oprește videoul</span>
+            </button>
+            <button class="sound-btn sound-btn--sm" type="button" data-sound aria-controls="v-cat-c" aria-pressed="false">
+              <svg class="ico sound-btn__on" aria-hidden="true"><use href="#i-sound-on"/></svg>
+              <svg class="ico sound-btn__off" aria-hidden="true"><use href="#i-sound-off"/></svg>
+              <span class="sound-btn__lbl">Pornește sunetul</span>
+            </button>
+          </div>
+          <figcaption class="vid__cap">
+            <p class="eyebrow">Categoria C / CE</p>
+            <h3>Cursuri pe camion</h3>
+            <p>Mercedes-Benz Atego cu cutie automată și MAN cu cutie manuală, plus ansamblul cu remorcă pentru C+E.</p>
+            <a class="arrow-link" href="#cat-cd">Vezi tarifele categoriei C <svg class="ico" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          </figcaption>
+        </figure>
+      </div>
     </div>
   </section>
 
@@ -599,6 +667,6 @@
   </div>
 </div>
 
-<script src="assets/js/main.js" defer></script>
+<script src="assets/js/main.js?v=2" defer></script>
 </body>
 </html>

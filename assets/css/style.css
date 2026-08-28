@@ -2147,7 +2147,184 @@ a.doc:hover { background: var(--ink-3); }
 .u-mid { min-height: 60vh; display: grid; align-items: center; }
 
 /* --------------------------------------------------------------------------
-   28. Puncte de rupere
+   28. Video — cadru, controale de redare și de sunet
+   Sunetul e oprit implicit; butonul cu difuzor îl pornește la cererea vizitatorului.
+   -------------------------------------------------------------------------- */
+/* Controalele apar doar dacă JS le poate pune în funcțiune */
+.vid__ctrls[hidden], .sound-btn[hidden] { display: none; }
+
+.sound-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 44px;
+  padding-inline: 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: rgba(11, 13, 15, 0.62);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background-color 0.25s var(--ease), border-color 0.25s var(--ease),
+              color 0.25s var(--ease), transform 0.25s var(--ease);
+}
+.sound-btn:hover {
+  background: rgba(11, 13, 15, 0.82);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--white);
+  transform: translateY(-2px);
+}
+.sound-btn .ico { width: 18px; height: 18px; flex: none; }
+.sound-btn__lbl { white-space: nowrap; }
+
+/* Starea implicită: mut — se vede difuzorul tăiat și eticheta „Pornește sunetul" */
+.sound-btn .sound-btn__on { display: none; }
+.sound-btn[aria-pressed="true"] .sound-btn__off { display: none; }
+.sound-btn[aria-pressed="true"] .sound-btn__on { display: block; }
+.sound-btn[aria-pressed="true"] {
+  border-color: rgba(242, 53, 53, 0.5);
+  background: rgba(242, 53, 53, 0.2);
+  color: var(--white);
+}
+
+/* Sus-dreapta, sub antet: singura zonă a hero-ului care rămâne liberă. Marginea
+   de jos e ocupată de indicatorul de derulare, de bara de statistici (care urcă
+   peste hero) și de butonul flotant de WhatsApp. */
+.sound-btn--hero {
+  position: absolute;
+  z-index: 2;
+  right: var(--gutter);
+  top: calc(var(--header-h) + 1rem);
+}
+.sound-btn--sm { height: 40px; padding-inline: 0.85rem; font-size: 0.78rem; }
+
+/* Cadrul video ------------------------------------------------------------ */
+.vid {
+  position: relative;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--ink-2);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+.vid__el {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--ink);
+}
+.vid::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 45%;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(11, 13, 15, 0.72));
+  opacity: 0;
+  transition: opacity 0.3s var(--ease);
+}
+.vid:hover::after, .vid:focus-within::after { opacity: 1; }
+
+.vid__ctrls {
+  position: absolute;
+  right: clamp(0.75rem, 2vw, 1.25rem);
+  bottom: clamp(0.75rem, 2vw, 1.25rem);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.vid__btn {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: rgba(11, 13, 15, 0.62);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color 0.25s var(--ease), border-color 0.25s var(--ease),
+              color 0.25s var(--ease), transform 0.25s var(--ease);
+}
+.vid__btn:hover {
+  background: rgba(11, 13, 15, 0.82);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--white);
+  transform: translateY(-2px);
+}
+.vid__btn .ico { width: 16px; height: 16px; }
+/* aria-pressed="true" = rulează, deci se oferă pauza */
+.vid__btn .vid__btn-play { display: block; }
+.vid__btn .vid__btn-pause { display: none; }
+.vid__btn[aria-pressed="true"] .vid__btn-play { display: none; }
+.vid__btn[aria-pressed="true"] .vid__btn-pause { display: block; }
+
+.vid__cap {
+  padding: clamp(1.3rem, 2.6vw, 1.8rem);
+  border-top: 1px solid var(--line);
+}
+.vid__cap .eyebrow { margin-bottom: 0.6rem; }
+.vid__cap h3 {
+  font-size: clamp(1.15rem, 2vw, 1.4rem);
+  font-weight: 800;
+  color: var(--white);
+  margin-bottom: 0.45rem;
+}
+.vid__cap p { color: var(--text-soft); font-size: 0.95rem; margin-bottom: 1rem; }
+
+.vid-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: clamp(1.25rem, 2.5vw, 2rem);
+}
+/* În cadrele cu descriere, controalele stau peste imagine, nu peste text. Fiind
+   mai mici, butonul de sunet rămâne doar iconiță — eticheta e citită de cititoarele
+   de ecran, iar secțiunea explică deja rolul difuzorului. */
+.vid--card .vid__ctrls { bottom: auto; top: clamp(0.75rem, 2vw, 1.25rem); }
+.vid--card .sound-btn {
+  width: 40px;
+  padding-inline: 0;
+  justify-content: center;
+}
+.vid--card .sound-btn__lbl {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Legătura din cardul de tarif către filmul categoriei */
+.card-vid { margin: 0.9rem 0 1.4rem; }
+.card-vid a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: var(--text-soft);
+  transition: color 0.25s var(--ease);
+}
+.card-vid a:hover { color: var(--red-hot); }
+.card-vid .ico { width: 13px; height: 13px; color: var(--red-hot); }
+
+@media (max-width: 560px) {
+  .sound-btn--hero { top: calc(var(--header-h) + 0.75rem); }
+}
+
+/* --------------------------------------------------------------------------
+   29. Puncte de rupere
    -------------------------------------------------------------------------- */
 @media (max-width: 1100px) {
   .footer__grid { grid-template-columns: 1fr 1fr; }
@@ -2191,7 +2368,7 @@ a.doc:hover { background: var(--ink-3); }
 }
 
 /* --------------------------------------------------------------------------
-   29. Preferințe utilizator
+   30. Preferințe utilizator
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -2204,6 +2381,7 @@ a.doc:hover { background: var(--ink-3); }
   .hero h1 .word { opacity: 1; transform: none; }
   .hero__media video { display: none; }
   .hero__media .poster-fallback { display: block !important; }
+  .sound-btn--hero { display: none; }
   /* Banda parcului auto stă pe loc, traseul se afișează desenat complet */
   .marquee__track { animation: none; transform: none; }
   .roadway__rail::after { transform: scaleY(1); }

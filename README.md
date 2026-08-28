@@ -77,20 +77,22 @@ Antetul și subsolul sunt copiate identic în fiecare pagină. Dacă modifici un
     ├── js/main.js                  Toată interactivitatea, un singur fișier
     ├── fonts/                      Mulish variabil (400–900), self-hosted
     ├── img/                        Logo, poster, sala de curs, Yaris, favicon, OG
-    └── video/                      Video-ul de fundal din hero (webm + mp4)
+    └── video/                      Cele 4 filmări (MP4 H.264): hero, prezentare, categoria A, categoria C
 ```
 
 ---
 
 ## Ce e inclus
 
-**Design** — temă dark, video cinematic în hero, animații la scroll, carduri cu înclinare 3D, meniu mobil pe tot ecranul, bară fixă de acțiuni pe telefon (Sună / WhatsApp / Înscrie-te). Traseu grafic pentru etapele până la permis, cu marcaj rutier care se desenează pe măsură ce derulezi. Bandă derulantă cu parcul auto. Filigran de vehicul pe cardurile de categorii și de tarife.
+**Design** — temă dark, video cinematic în hero (plus o prezentare la mijlocul paginii principale și câte o filmare pentru categoriile A și C pe pagina de tarife — toate pornesc pe mut, cu buton de sunet), animații la scroll, carduri cu înclinare 3D, meniu mobil pe tot ecranul, bară fixă de acțiuni pe telefon (Sună / WhatsApp / Înscrie-te). Traseu grafic pentru etapele până la permis, cu marcaj rutier care se desenează pe măsură ce derulezi. Bandă derulantă cu parcul auto. Filigran de vehicul pe cardurile de categorii și de tarife.
 
 **Conținut** — răspunsuri la întrebările reale ale unui cursant: de la ce vârstă, cât durează, ce acte îi trebuie, ce se întâmplă după ce trimite formularul. Accordion de întrebări frecvente cu date structurate `FAQPage`.
 
 **SEO local** — date structurate `DrivingSchool` cu adresă, coordonate GPS, program, cele 7 tarife ca `Offer`, breadcrumbs pe fiecare pagină, titluri și descrieri unice, sitemap, imagine de partajare.
 
 **Accesibilitate** — toate cele 7 pagini validează fără erori la W3C, contrast AA, navigare completă de la tastatură, `prefers-reduced-motion`, etichete și mesaje de eroare legate corect în formular.
+
+> **Cache:** `.htaccess` ține CSS, JS, imaginile și filmările în cache un an. Când modifici `style.css`, `main.js` sau suprascrii o imagine/filmare păstrându-i numele, urcă versiunea din link-uri (`?v=2` → `?v=3`) în toate paginile, altfel vizitatorii vechi rămân cu fișierele din cache.
 
 **Performanță** — un singur CSS și un singur JS, zero dependențe externe, fonturi self-hosted (fără Google Fonts), imagini WebP cu fallback JPEG/PNG prin `<picture>`, video amânat, ~360 KB pentru prima încărcare fără video.
 

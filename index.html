@@ -25,7 +25,7 @@
 
 <link rel="preload" href="assets/fonts/mulish-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/mulish-latin-ext.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/style.css?v=2">
 
 <script type="application/ld+json">
 {
@@ -258,6 +258,10 @@
 <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></symbol>
 <symbol id="i-cap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 9 12 4 2 9l10 5z"/><path d="M6 11.5V16c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5v-4.5"/></symbol>
 <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+<symbol id="i-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></symbol>
+<symbol id="i-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6M21 9l-5 6"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 0 0 1.52.86l11.14-6.86a1 1 0 0 0 0-1.72L9.52 4.28A1 1 0 0 0 8 5.14z"/></symbol>
+<symbol id="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1.2"/><rect x="14" y="4" width="4" height="16" rx="1.2"/></symbol>
 </svg>
 
 <!-- ===================== ANTET ===================== -->
@@ -307,14 +311,14 @@
   <!-- ===================== HERO ===================== -->
   <section class="hero">
     <div class="hero__media">
-      <video autoplay muted loop playsinline preload="metadata"
-             poster="assets/img/hero-poster.jpg" aria-hidden="true" tabindex="-1">
-        <source src="assets/video/viovas-hero.webm" type="video/webm">
-        <source src="assets/video/viovas-hero.mp4" type="video/mp4">
+      <video id="v-hero" data-autoplay autoplay muted loop playsinline preload="metadata"
+             poster="assets/img/hero-poster.jpg?v=2" tabindex="-1"
+             aria-label="Filmare de prezentare: autoturismul școlii Viovas pe traseu">
+        <source src="assets/video/viovas-hero.mp4?v=2" type="video/mp4">
       </video>
       <picture>
-        <source srcset="assets/img/hero-poster.webp" type="image/webp">
-        <img class="poster-fallback" src="assets/img/hero-poster.jpg" alt="" style="display:none" width="1920" height="1080">
+        <source srcset="assets/img/hero-poster.webp?v=2" type="image/webp">
+        <img class="poster-fallback" src="assets/img/hero-poster.jpg?v=2" alt="" style="display:none" width="1920" height="1080">
       </picture>
     </div>
     <div class="hero__scrim"></div>
@@ -345,6 +349,12 @@
         </div>
       </div>
     </div>
+
+    <button class="sound-btn sound-btn--hero" type="button" data-sound aria-controls="v-hero" aria-pressed="false" hidden>
+      <svg class="ico sound-btn__on" aria-hidden="true"><use href="#i-sound-on"/></svg>
+      <svg class="ico sound-btn__off" aria-hidden="true"><use href="#i-sound-off"/></svg>
+      <span class="sound-btn__lbl">Pornește sunetul</span>
+    </button>
 
     <div class="scroll-cue" aria-hidden="true">
       <span class="scroll-cue__track"></span>
@@ -587,6 +597,37 @@
         <svg class="ico" aria-hidden="true"><use href="#i-info"/></svg>
         <span>Duratele minime — 24 de ore de legislație și 30 de ore de conducere, în minimum 4 săptămâni — sunt cerințe legale, valabile la orice școală auto autorizată din România. Cursurile se finalizează în cel mult 6 luni.</span>
       </p>
+    </div>
+  </section>
+
+  <!-- ===================== VIDEO DE PREZENTARE ===================== -->
+  <section class="section section--alt" id="video">
+    <div class="wrap">
+      <div class="sec-head sec-head--center" data-reveal>
+        <p class="eyebrow">Video</p>
+        <h2>Viovas, în mișcare</h2>
+        <p>Poligon propriu, motociclete de ultimă generație și instructori care conduc alături de tine. Apasă pe difuzor dacă vrei și sunetul.</p>
+      </div>
+
+      <figure class="vid" data-reveal>
+        <video id="v-mijloc" class="vid__el" data-autoplay muted loop playsinline preload="none"
+               poster="assets/img/mijloc-poster.jpg" tabindex="-1"
+               aria-label="Filmare de prezentare Viovas: motociclete și pregătire pe poligon">
+          <source src="assets/video/viovas-mijloc.mp4" type="video/mp4">
+        </video>
+        <div class="vid__ctrls" hidden>
+          <button class="vid__btn" type="button" data-play aria-controls="v-mijloc" aria-pressed="true">
+            <svg class="ico vid__btn-play" aria-hidden="true"><use href="#i-play"/></svg>
+            <svg class="ico vid__btn-pause" aria-hidden="true"><use href="#i-pause"/></svg>
+            <span class="visually-hidden">Pornește sau oprește videoul</span>
+          </button>
+          <button class="sound-btn sound-btn--sm" type="button" data-sound aria-controls="v-mijloc" aria-pressed="false">
+            <svg class="ico sound-btn__on" aria-hidden="true"><use href="#i-sound-on"/></svg>
+            <svg class="ico sound-btn__off" aria-hidden="true"><use href="#i-sound-off"/></svg>
+            <span class="sound-btn__lbl">Pornește sunetul</span>
+          </button>
+        </div>
+      </figure>
     </div>
   </section>
 
@@ -915,6 +956,6 @@
   </div>
 </div>
 
-<script src="assets/js/main.js" defer></script>
+<script src="assets/js/main.js?v=2" defer></script>
 </body>
 </html>

@@ -1,2 +1,5 @@
 .DS_Store
 *.log
+
+# Sursele video nebrute (~98 MB) — pe site urcă doar variantele comprimate din assets/video/
+Video Viovas/

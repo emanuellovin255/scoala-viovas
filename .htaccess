@@ -34,10 +34,24 @@ ErrorDocument 404 /404.html
 # -----------------------------------------------------------------------------
 #  2. Compresie
 # -----------------------------------------------------------------------------
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/css text/plain text/xml text/javascript
+  AddOutputFilterByType BROTLI_COMPRESS application/javascript application/json application/xml
+  AddOutputFilterByType BROTLI_COMPRESS image/svg+xml application/manifest+json application/rss+xml
+</IfModule>
+
 <IfModule mod_deflate.c>
-  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml
-  AddOutputFilterByType DEFLATE application/javascript application/json
-  AddOutputFilterByType DEFLATE image/svg+xml application/manifest+json
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml text/javascript
+  AddOutputFilterByType DEFLATE application/javascript application/json application/xml
+  AddOutputFilterByType DEFLATE image/svg+xml application/manifest+json application/rss+xml
+  AddOutputFilterByType DEFLATE font/woff2 font/ttf image/x-icon
+</IfModule>
+
+# Fallback pentru servere fără mod_filter modern
+<IfModule mod_gzip.c>
+  mod_gzip_on Yes
+  mod_gzip_item_include mime ^text/.*
+  mod_gzip_item_include mime ^application/(javascript|json|xml|manifest\+json)$
 </IfModule>
 
 # -----------------------------------------------------------------------------
@@ -63,10 +77,14 @@ ErrorDocument 404 /404.html
 #  4. Securitate de bază
 # -----------------------------------------------------------------------------
 <IfModule mod_headers.c>
-  Header set X-Content-Type-Options "nosniff"
-  Header set Referrer-Policy "strict-origin-when-cross-origin"
-  Header set X-Frame-Options "SAMEORIGIN"
-  Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set X-XSS-Protection "1; mode=block"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), interest-cohort=()"
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" env=HTTPS
+  Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self' https://api.web3forms.com; img-src 'self' data:; font-src 'self'; media-src 'self'; frame-src https://www.google.com; child-src https://www.google.com; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://api.web3forms.com; upgrade-insecure-requests"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
 </IfModule>
 
 Options -Indexes

@@ -26,16 +26,28 @@ Până pui cheia, formularul validează corect, dar la trimitere afișează un m
 
 ### 2. Confirmă WhatsApp
 
-Butoanele de WhatsApp duc spre `wa.me/40762692450`. Dacă numărul mobil **nu** are WhatsApp activ, caută `wa.me/40762692450` în toate fișierele `.html` și înlocuiește-l sau șterge butoanele.
+Butoanele de WhatsApp folosesc deep link-ul oficial `api.whatsapp.com/send?phone=40762692450` (varianta `wa.me` face un redirect 302 pe care unele instrumente de audit îl raportează ca link rupt). Dacă numărul mobil **nu** are WhatsApp activ, caută `api.whatsapp.com/send` în toate fișierele `.html` și înlocuiește numărul sau șterge butoanele.
 
 ### 3. Urcă fișierele
 
 Copiază **tot** conținutul acestui folder în rădăcina hostingului (`public_html/` sau echivalent).
 
-- Pe hosting Apache / cPanel: `.htaccess` face redirecționările 301 de la vechile adrese WordPress.
-- Pe Netlify / Cloudflare Pages: fișierul `_redirects` face același lucru. Poți șterge `.htaccess`.
+- Pe hosting Apache / cPanel: `.htaccess` face redirecționările 301 de la vechile adrese WordPress, plus compresia (Brotli/gzip), cache-ul și antetele de securitate.
+- Pe Netlify / Cloudflare Pages: `_redirects` face redirecționările, iar `_headers` pune antetele de securitate și cache-ul. Poți șterge `.htaccess`.
 
 Redirecționările sunt importante — fără ele pierzi poziționarea în Google pentru `/despre-noi/`, `/categorii/` și `/contact/`.
+
+### 4. Ce ține de hosting, nu de fișiere
+
+Trei lucruri dintr-un audit SEO nu se pot rezolva din cod, ci doar din server:
+
+| Verificare | Cum trece |
+|---|---|
+| **Antete de securitate** (`X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, HSTS, CSP) | Automat, dacă `.htaccess` (Apache) sau `_headers` (Netlify / Cloudflare Pages) ajunge în rădăcină. Pe **GitHub Pages nu funcționează** — GitHub nu permite antete proprii |
+| **Compresie** | Apache: `mod_deflate` / `mod_brotli`, deja configurate în `.htaccess`. GitHub Pages comprimă doar dacă browserul cere explicit `Accept-Encoding` |
+| **CDN** | Pune domeniul prin **Cloudflare** (plan gratuit). Rezolvă simultan CDN, Brotli și antetele, dacă hostingul nu le poate seta |
+
+Pe scurt: pe GitHub Pages, auditul se va opri în jur de 90. Pe hostingul real al lui `viovas.ro` (Apache) sau pe Cloudflare Pages, trece.
 
 ---
 
@@ -71,6 +83,7 @@ Antetul și subsolul sunt copiate identic în fiecare pagină. Dacă modifici un
 ├── 404.html
 ├── .htaccess                       Redirecționări + cache + securitate (Apache)
 ├── _redirects                      Redirecționări (Netlify / Cloudflare Pages)
+├── _headers                        Antete de securitate + cache (Netlify / Cloudflare Pages)
 ├── robots.txt · sitemap.xml · site.webmanifest
 └── assets/
     ├── css/style.css               Tot stilul, un singur fișier

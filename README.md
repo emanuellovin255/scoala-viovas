@@ -66,6 +66,16 @@ Pe scurt: pe GitHub Pages, auditul se va opri în jur de 90. Pe hostingul real a
 | **Actele necesare** | `categorii.html`, secțiunea `#acte` |
 | **Banda cu parcul auto** | `index.html`, secțiunea `.marquee` — se dublează automat din JavaScript, tu scrii lista o singură dată |
 | **Culori, spațieri, fonturi** | `assets/css/style.css`, secțiunea **2. Tokeni**, chiar la început |
+| **Intro-ul cu mașina** | `index.html`: scriptul din `<head>` și blocul `.intro` de la începutul lui `<body>`. Coregrafia e în `style.css`, secțiunea **31**, iar pornirea în `main.js`, modulul **0** |
+| **Filmările din panourile de categorii** | `index.html`, secțiunea `#categorii`, atributul `data-src` al fiecărui `<video>` |
+
+### Intro-ul de la deschidere
+
+Pe prima pagină, mașina Viovas traversează ecranul, apare titlul „Școala de șoferi Viovas", iar ecranul se despică pe linia drumului și se deschide site-ul (~4 secunde). Rulează **o dată pe sesiune de browser**: la fiecare deschidere nouă a site-ului, dar nu și când vizitatorul revine pe „Acasă" din altă pagină. Se poate sări cu butonul „Sari peste", cu un click oriunde sau cu tasta Esc. Nu rulează deloc pentru cine are activată în sistem opțiunea „reduce motion".
+
+- **Ca să-l vezi din nou** în timp ce lucrezi: deschide site-ul într-un tab nou.
+- **Ca să-l oprești definitiv:** șterge din `index.html` scriptul din `<head>` (cel cu `intro-on`) și blocul `<div class="intro">`.
+- **Ca să schimbi durata:** timpii sunt scriși în comentariul secțiunii 31 din `style.css`. Dacă îi muți, mută și cele două valori din `main.js` (`3400` = momentul despicării, `4250` = finalul).
 
 Antetul și subsolul sunt copiate identic în fiecare pagină. Dacă modifici unul, modifică-l în toate cele 7 fișiere `.html`.
 
@@ -97,7 +107,19 @@ Antetul și subsolul sunt copiate identic în fiecare pagină. Dacă modifici un
 
 ## Ce e inclus
 
-**Design** — temă dark, video cinematic în hero (plus o prezentare la mijlocul paginii principale și câte o filmare pentru categoriile A și C pe pagina de tarife — toate pornesc pe mut, cu buton de sunet), animații la scroll, carduri cu înclinare 3D, meniu mobil pe tot ecranul, bară fixă de acțiuni pe telefon (Sună / WhatsApp / Înscrie-te). Traseu grafic pentru etapele până la permis, cu marcaj rutier care se desenează pe măsură ce derulezi. Bandă derulantă cu parcul auto. Filigran de vehicul pe cardurile de categorii și de tarife.
+**Design** — temă dark cinematică, construită pe tema drumului:
+
+- **Intro** cu Toyota Yaris-ul brandat Viovas care intră în cadru, frânează (cu stopurile aprinse), lasă în urmă o dâră roșie, iar ecranul se despică pe linia ei.
+- **Hero** cu titlu uriaș, colțuri de vizor, lumină de far care urmărește cursorul; la derulare, filmarea se strânge într-un cadru rotunjit.
+- **Bara de încredere** ca un bord: cifrele se derulează ca la un kilometraj mecanic. La fel prețurile de pe pagina de tarife.
+- **Bandă cu parcul auto** pe două rânduri, în sensuri opuse, a căror viteză și înclinare urmează derularea.
+- **Categorii** ca panouri cinematice: panoul activ se lărgește și își pornește filmarea (B, A, C·D).
+- **Drumul spre permis**: o mașinuță văzută de sus coboară pe traseu odată cu derularea și aprinde fiecare etapă.
+- **Filmarea de prezentare** se extinde până la marginile ecranului când ajunge în centru.
+- **Semafor** pe benzile de contact: roșu, apoi verde, iar butonul „pornește".
+- Peste tot: titluri care urcă pe cuvinte, cursor personalizat și butoane magnetice (doar pe mouse), carduri cu lumină care urmărește cursorul, vitezometru fix care arată viteza de derulare (click = înapoi sus), bară de progres, tranziții animate între pagini, granulație de film, wordmark „VIOVAS" uriaș în subsol, drum în perspectivă pe paginile interioare.
+
+Toate filmările pornesc pe mut, cu buton de sunet. Meniu mobil pe tot ecranul, bară fixă de acțiuni pe telefon (Sună / WhatsApp / Înscrie-te).
 
 **Conținut** — răspunsuri la întrebările reale ale unui cursant: de la ce vârstă, cât durează, ce acte îi trebuie, ce se întâmplă după ce trimite formularul. Accordion de întrebări frecvente cu date structurate `FAQPage`.
 
@@ -107,7 +129,7 @@ Antetul și subsolul sunt copiate identic în fiecare pagină. Dacă modifici un
 
 > **Cache:** `.htaccess` ține CSS, JS, imaginile și filmările în cache un an. Când modifici `style.css`, `main.js` sau suprascrii o imagine/filmare păstrându-i numele, urcă versiunea din link-uri (`?v=2` → `?v=3`) în toate paginile, altfel vizitatorii vechi rămân cu fișierele din cache.
 
-**Performanță** — un singur CSS și un singur JS, zero dependențe externe, fonturi self-hosted (fără Google Fonts), imagini WebP cu fallback JPEG/PNG prin `<picture>`, video amânat, ~360 KB pentru prima încărcare fără video.
+**Performanță** — un singur CSS și un singur JS, zero dependențe externe, fonturi self-hosted (fără Google Fonts), imagini WebP cu fallback JPEG/PNG prin `<picture>`, video amânat. Toate efectele de derulare trec printr-o singură buclă `requestAnimationFrame` care nu citește layout în fiecare cadru. Filmările din panourile de categorii se descarcă doar când panoul devine activ, și deloc dacă vizitatorul are activată economisirea de date. Sub „reduce motion" nu se mișcă nimic singur.
 
 ---
 

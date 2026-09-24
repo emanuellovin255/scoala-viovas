@@ -1,6 +1,7 @@
 /* ==========================================================================
    VIOVAS — interacțiuni
    Vanilla JS, fără dependențe. Fiecare modul iese elegant dacă lipsește DOM-ul.
+   Sub „prefers-reduced-motion" nu pornește nimic din ce se mișcă singur.
    ========================================================================== */
 (function () {
   'use strict';
@@ -17,23 +18,130 @@
 
   var $  = function (s, c) { return (c || document).querySelector(s); };
   var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
+  var root = document.documentElement;
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  var hasIO = 'IntersectionObserver' in window;
+  var clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
+  var pageTop = function (el) { return el.getBoundingClientRect().top + window.scrollY; };
 
   /* ------------------------------------------------------------------------
-     1. Antet lipit
+     0. Intro — mașina Viovas pe drum (doar pe prima pagină, o dată pe sesiune)
+     Coregrafia e în CSS (secțiunea 31); aici doar o pornim și o închidem.
+     ------------------------------------------------------------------------ */
+  (function intro() {
+    var el = document.getElementById('intro');
+    if (!el) return;
+    if (!root.classList.contains('intro-on')) { el.parentNode.removeChild(el); return; }
+
+    // Intro-ul pornește mereu de sus (dacă adresa nu cere o secțiune anume)
+    if (!window.location.hash) {
+      if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
+      window.scrollTo(0, 0);
+    }
+
+    // Literele titlului, fiecare în span-ul ei, ca să poată urca pe rând
+    $$('[data-letters]', el).forEach(function (n) {
+      var text = n.textContent;
+      n.textContent = '';
+      Array.prototype.forEach.call(text, function (ch, i) {
+        var s = document.createElement('span');
+        s.className = 'ch';
+        s.style.setProperty('--i', i);
+        s.textContent = ch === ' ' ? '\u00A0' : ch;
+        n.appendChild(s);
+      });
+    });
+
+    var started = false, done = false, timers = [];
+
+    // La deschidere, filmarea din hero trebuie să ruleze (unele browsere o opresc
+    // cât timp e acoperită)
+    function wakeHero() {
+      var v = document.getElementById('v-hero');
+      if (!v || !v.paused || !v.muted) return;
+      var p = v.play();
+      if (p && p.catch) p.catch(function () {});
+    }
+
+    function finish() {
+      if (done) return;
+      done = true;
+      timers.forEach(window.clearTimeout);
+      root.classList.add('intro-open');
+      root.classList.remove('intro-on');
+      if (el.parentNode) el.parentNode.removeChild(el);
+      wakeHero();
+      try { window.sessionStorage.setItem('viovas-intro', '1'); } catch (e) {}
+      document.removeEventListener('keydown', onKey);
+    }
+    function skip() {
+      if (done) return;
+      root.classList.add('intro-open');
+      el.classList.add('is-skip');
+      timers.push(window.setTimeout(finish, 450));
+    }
+    function onKey(e) { if (e.key === 'Escape') skip(); }
+    function start() {
+      if (started) return;
+      started = true;
+      root.classList.add('intro-play');
+      // Cortina se despică la 3,4 s — atunci pornește și hero-ul din spate
+      timers.push(window.setTimeout(function () { root.classList.add('intro-open'); wakeHero(); }, 3400));
+      timers.push(window.setTimeout(finish, 4250));
+    }
+
+    el.addEventListener('click', skip);
+    document.addEventListener('keydown', onKey);
+
+    // Pornim doar când imaginea mașinii e decodată (cel mult 700 ms de așteptare)
+    var img = $('.intro__body', el);
+    var ready = (img && img.decode) ? img.decode() : Promise.resolve();
+    var guard = new Promise(function (r) { window.setTimeout(r, 700); });
+    Promise.race([ready, guard]).then(start, start);
+  })();
+
+  /* ------------------------------------------------------------------------
+     1. Antet — lipit, ascuns la derulare în jos, pastilă sub linkuri
      ------------------------------------------------------------------------ */
   (function header() {
     var el = $('.header');
     if (!el) return;
-    var ticking = false;
+    var ticking = false, lastY = window.scrollY;
+
     function update() {
-      el.classList.toggle('is-stuck', window.scrollY > 40);
+      var y = Math.max(0, window.scrollY);
+      el.classList.toggle('is-stuck', y > 40);
+      var locked = document.body.classList.contains('is-locked') || root.classList.contains('intro-on');
+      if (!locked && y > 320 && y > lastY + 6) el.classList.add('is-hidden');
+      else if (y < lastY - 6 || y <= 320) el.classList.remove('is-hidden');
+      lastY = y;
       ticking = false;
     }
     window.addEventListener('scroll', function () {
       if (!ticking) { ticking = true; window.requestAnimationFrame(update); }
     }, { passive: true });
+    el.addEventListener('focusin', function () { el.classList.remove('is-hidden'); });
     update();
+
+    // Pastila care alunecă între linkurile de navigare
+    var nav = $('.nav', el);
+    if (!nav || reduced || !finePointer) return;
+    var pill = document.createElement('span');
+    pill.className = 'nav__pill';
+    pill.setAttribute('aria-hidden', 'true');
+    nav.appendChild(pill);
+
+    function moveTo(link) {
+      nav.style.setProperty('--px', link.offsetLeft + 'px');
+      nav.style.setProperty('--pw', link.offsetWidth + 'px');
+      nav.classList.add('has-pill');
+    }
+    $$('.nav__link', nav).forEach(function (link) {
+      link.addEventListener('mouseenter', function () { moveTo(link); });
+      link.addEventListener('focus', function () { moveTo(link); });
+    });
+    nav.addEventListener('mouseleave', function () { nav.classList.remove('has-pill'); });
   })();
 
   /* ------------------------------------------------------------------------
@@ -86,13 +194,65 @@
   })();
 
   /* ------------------------------------------------------------------------
-     3. Reveal la scroll
+     3. Titluri pe cuvinte — fiecare cuvânt urcă dintr-o mască
+     Textul rămâne același pentru cititoarele de ecran (doar se împachetează).
+     ------------------------------------------------------------------------ */
+  (function splitWords() {
+    if (reduced) return;
+    var heads = $$('[data-split], .sec-head h2, .pagehead h1, .band__content h2, .cta-band h2, .split h2');
+    if (!heads.length) return;
+
+    function wrap(content, i) {
+      var w = document.createElement('span');
+      w.className = 'w';
+      var inner = document.createElement('span');
+      inner.className = 'w__i';
+      inner.style.setProperty('--i', i);
+      inner.appendChild(content);
+      w.appendChild(inner);
+      return w;
+    }
+
+    heads.forEach(function (h) {
+      if (h.classList.contains('split-w')) return;
+      var i = 0;
+      var frag = document.createDocumentFragment();
+      Array.prototype.slice.call(h.childNodes).forEach(function (node) {
+        if (node.nodeType === 3) {
+          node.textContent.split(/(\s+)/).forEach(function (part) {
+            if (!part) return;
+            if (!part.trim()) { frag.appendChild(document.createTextNode(' ')); return; }
+            frag.appendChild(wrap(document.createTextNode(part), i++));
+          });
+        } else if (node.nodeType === 1) {
+          frag.appendChild(wrap(node, i++));
+        }
+      });
+      h.textContent = '';
+      h.appendChild(frag);
+      h.classList.add('split-w');
+    });
+
+    var rest = heads.filter(function (h) { return !h.closest('.hero'); });
+    if (!hasIO) { rest.forEach(function (h) { h.classList.add('is-in'); }); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-in');
+        io.unobserve(entry.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.15 });
+    rest.forEach(function (h) { io.observe(h); });
+  })();
+
+  /* ------------------------------------------------------------------------
+     4. Reveal la scroll
      ------------------------------------------------------------------------ */
   (function reveal() {
     var items = $$('[data-reveal]');
     if (!items.length) return;
 
-    if (reduced || !('IntersectionObserver' in window)) {
+    if (reduced || !hasIO) {
       items.forEach(function (n) { n.classList.add('is-in'); });
       return;
     }
@@ -119,81 +279,89 @@
   })();
 
   /* ------------------------------------------------------------------------
-     4. Contoare
+     5. Odometru — cifrele se derulează ca la un kilometraj mecanic
+     Se aplică pe [data-count] (bara de încredere) și pe prețurile din tarife.
+     Numărul real rămâne în pagină, ascuns vizual, pentru cititoarele de ecran.
      ------------------------------------------------------------------------ */
-  (function counters() {
-    var nodes = $$('[data-count]');
-    if (!nodes.length) return;
+  (function odometers() {
+    if (reduced) return;
+    var targets = [];
 
-    function run(el) {
-      var target = parseFloat(el.getAttribute('data-count'));
-      var decimals = (el.getAttribute('data-decimals') | 0);
-      if (isNaN(target)) return;
-      // Un an nu se numără de la zero; se afișează direct.
-      if (reduced || el.hasAttribute('data-count-static')) {
-        el.textContent = target.toFixed(decimals).replace('.', ',');
-        return;
-      }
-
-      var dur = 1500, t0 = null;
-      function frame(t) {
-        if (t0 === null) t0 = t;
-        var p = Math.min((t - t0) / dur, 1);
-        var eased = 1 - Math.pow(1 - p, 4);
-        el.textContent = (target * eased).toFixed(decimals).replace('.', ',');
-        if (p < 1) window.requestAnimationFrame(frame);
-      }
-      window.requestAnimationFrame(frame);
+    function build(value) {
+      var sr = document.createElement('span');
+      sr.className = 'visually-hidden';
+      sr.textContent = value;
+      var odo = document.createElement('span');
+      odo.className = 'odo';
+      odo.setAttribute('aria-hidden', 'true');
+      var k = 0;
+      Array.prototype.forEach.call(value, function (ch) {
+        if (!/\d/.test(ch)) {
+          var s = document.createElement('span');
+          s.className = 'odo__sep';
+          s.textContent = ch;
+          odo.appendChild(s);
+          return;
+        }
+        var col = document.createElement('span');
+        col.className = 'odo__col';
+        var strip = document.createElement('span');
+        strip.className = 'odo__strip';
+        var html = '';
+        // Două rotații de cifre: tamburul face un tur complet înainte să se oprească
+        for (var n = 0; n < 20; n++) html += '<span>' + (n % 10) + '</span>';
+        strip.innerHTML = html;
+        strip.style.setProperty('--n', 10 + parseInt(ch, 10));
+        strip.style.setProperty('--t', (1.3 + k * 0.3).toFixed(2) + 's');
+        strip.style.setProperty('--td', (k * 0.07).toFixed(2) + 's');
+        col.appendChild(strip);
+        odo.appendChild(col);
+        k++;
+      });
+      targets.push(odo);
+      return [sr, odo];
     }
 
-    if (!('IntersectionObserver' in window)) { nodes.forEach(run); return; }
+    $$('[data-count]').forEach(function (el) {
+      var value = el.getAttribute('data-count');
+      if (!value) return;
+      el.textContent = '';
+      build(value).forEach(function (n) { el.appendChild(n); });
+    });
+
+    $$('.price-card__amount').forEach(function (el) {
+      var node = el.firstChild;
+      if (!node || node.nodeType !== 3 || !/\d/.test(node.textContent)) return;
+      var value = node.textContent.trim();
+      var parts = build(value);
+      el.insertBefore(parts[0], node);
+      el.insertBefore(parts[1], node);
+      el.removeChild(node);
+    });
+
+    if (!targets.length) return;
+    function on(odo) {
+      window.requestAnimationFrame(function () {
+        window.requestAnimationFrame(function () { odo.classList.add('is-on'); });
+      });
+    }
+    if (!hasIO) { targets.forEach(on); return; }
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         if (!entry.isIntersecting) return;
-        run(entry.target);
+        on(entry.target);
         io.unobserve(entry.target);
       });
-    }, { threshold: 0.5 });
-    nodes.forEach(function (n) { io.observe(n); });
-  })();
-
-  /* ------------------------------------------------------------------------
-     5. Titlul hero, animat pe cuvinte
-     ------------------------------------------------------------------------ */
-  (function splitTitle() {
-    var h = $('[data-split]');
-    if (!h || reduced) return;
-
-    var out = [];
-    Array.prototype.forEach.call(h.childNodes, function (node) {
-      if (node.nodeType === 3) {
-        node.textContent.split(/(\s+)/).forEach(function (part) {
-          if (!part.trim()) { out.push(document.createTextNode(part)); return; }
-          var span = document.createElement('span');
-          span.className = 'word';
-          span.textContent = part;
-          out.push(span);
-        });
-      } else {
-        node.classList.add('word');
-        out.push(node);
-      }
-    });
-
-    h.textContent = '';
-    var i = 0;
-    out.forEach(function (node) {
-      if (node.nodeType === 1) { node.style.setProperty('--i', i); i++; }
-      h.appendChild(node);
-    });
+    }, { threshold: 0.6 });
+    targets.forEach(function (t) { io.observe(t); });
   })();
 
   /* ------------------------------------------------------------------------
      6. Înclinare 3D pe carduri (doar pointer fin)
      ------------------------------------------------------------------------ */
   (function tilt() {
-    if (reduced || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
-    $$('[data-tilt]').forEach(function (card) {
+    if (reduced || !finePointer) return;
+    $$('[data-tilt], .price-card').forEach(function (card) {
       var raf = null;
       function move(e) {
         if (raf) return;
@@ -202,23 +370,49 @@
           var x = (e.clientX - r.left) / r.width - 0.5;
           var y = (e.clientY - r.top) / r.height - 0.5;
           card.style.transform =
-            'perspective(900px) rotateX(' + (-y * 5).toFixed(2) + 'deg) rotateY(' +
-            (x * 5).toFixed(2) + 'deg) translateY(-6px)';
+            'perspective(900px) rotateX(' + (-y * 6).toFixed(2) + 'deg) rotateY(' +
+            (x * 6).toFixed(2) + 'deg) translateY(-6px)';
           raf = null;
         });
       }
+      card.addEventListener('mouseenter', function () {
+        card.style.transition = 'transform 0.15s ease-out, border-color 0.3s, background-color 0.3s';
+      });
       card.addEventListener('mousemove', move);
-      card.addEventListener('mouseleave', function () { card.style.transform = ''; });
+      card.addEventListener('mouseleave', function () {
+        card.style.transition = 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)';
+        card.style.transform = '';
+      });
     });
   })();
 
   /* ------------------------------------------------------------------------
-     7. Filtre tarife
+     7. Filtre tarife — pastilă care alunecă, cardurile ies și intră animat
      ------------------------------------------------------------------------ */
   (function priceFilter() {
     var bar = $('.filters');
     if (!bar) return;
     var cards = $$('[data-cat]');
+    var pill = null, timer = null;
+
+    if (!reduced) {
+      pill = document.createElement('span');
+      pill.className = 'filters__pill';
+      pill.setAttribute('aria-hidden', 'true');
+      bar.appendChild(pill);
+      bar.classList.add('has-pill');
+    }
+    function movePill(btn) {
+      if (!pill || !btn) return;
+      bar.style.setProperty('--fx', btn.offsetLeft + 'px');
+      bar.style.setProperty('--fy', btn.offsetTop + 'px');
+      bar.style.setProperty('--fw', btn.offsetWidth + 'px');
+      bar.style.setProperty('--fh', btn.offsetHeight + 'px');
+    }
+    function pressed() { return $('.filter[aria-pressed="true"]', bar); }
+    movePill(pressed());
+    window.addEventListener('resize', function () { movePill(pressed()); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { movePill(pressed()); });
 
     bar.addEventListener('click', function (e) {
       var btn = e.target.closest('.filter');
@@ -228,9 +422,33 @@
       $$('.filter', bar).forEach(function (b) {
         b.setAttribute('aria-pressed', String(b === btn));
       });
+      movePill(btn);
+
+      function shows(c) { return val === 'all' || c.getAttribute('data-cat').split(' ').indexOf(val) > -1; }
+
+      if (reduced) {
+        cards.forEach(function (c) { c.hidden = !shows(c); });
+        return;
+      }
+
+      window.clearTimeout(timer);
       cards.forEach(function (c) {
-        c.hidden = !(val === 'all' || c.getAttribute('data-cat').split(' ').indexOf(val) > -1);
+        c.classList.remove('is-back');
+        if (!c.hidden) c.classList.add('is-out');
       });
+      timer = window.setTimeout(function () {
+        var n = 0;
+        cards.forEach(function (c) {
+          var vis = shows(c);
+          c.classList.remove('is-out');
+          c.hidden = !vis;
+          if (vis) {
+            c.style.animationDelay = (n++ * 60) + 'ms';
+            void c.offsetWidth;
+            c.classList.add('is-back');
+          }
+        });
+      }, 260);
     });
   })();
 
@@ -289,6 +507,21 @@
       return true;
     }
 
+    // O mașinuță traversează butonul după trimiterea reușită
+    function driveAcross() {
+      if (reduced) return;
+      var ns = 'http://www.w3.org/2000/svg';
+      var car = document.createElementNS(ns, 'svg');
+      car.setAttribute('class', 'ico btn__car');
+      car.setAttribute('aria-hidden', 'true');
+      var use = document.createElementNS(ns, 'use');
+      use.setAttribute('href', '#i-car');
+      car.appendChild(use);
+      btn.style.setProperty('--bw', btn.offsetWidth + 'px');
+      btn.appendChild(car);
+      window.setTimeout(function () { if (car.parentNode) car.parentNode.removeChild(car); }, 1600);
+    }
+
     $$('input, select, textarea', form).forEach(function (f) {
       if (f.type === 'hidden' || f.closest('.hp')) return;
       f.addEventListener('blur', function () { validate(f); });
@@ -340,6 +573,7 @@
           if (res.success) {
             form.reset();
             ok.classList.add('is-visible');
+            driveAcross();
             ok.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
           } else {
             throw new Error(res.message || 'Eroare');
@@ -367,7 +601,9 @@
     try { stored = window.localStorage.getItem(KEY); } catch (e) { stored = 'skip'; }
     if (stored) return;
 
-    window.setTimeout(function () { bar.classList.add('is-visible'); }, 1200);
+    // Pe prima pagină apare după intro, nu peste el
+    var wait = root.classList.contains('intro-on') ? 5200 : 1200;
+    window.setTimeout(function () { bar.classList.add('is-visible'); }, wait);
 
     bar.addEventListener('click', function (e) {
       if (!e.target.closest('[data-cookie]')) return;
@@ -381,46 +617,10 @@
      ------------------------------------------------------------------------ */
   $$('[data-year]').forEach(function (n) { n.textContent = new Date().getFullYear(); });
 
-
   /* ------------------------------------------------------------------------
-     12. Traseu — marcajul se desenează, pastilele se aprind pe rând
+     12. Bandă derulantă — se dublează conținutul pentru buclă continuă
      ------------------------------------------------------------------------ */
-  (function roadway() {
-    var roads = $$('[data-roadway]');
-    if (!roads.length) return;
-
-    if (reduced || !('IntersectionObserver' in window)) {
-      roads.forEach(function (road) {
-        road.style.setProperty('--progress', '1');
-        $$('.step', road).forEach(function (s) { s.classList.add('is-passed'); });
-      });
-      return;
-    }
-
-    roads.forEach(function (road) {
-      var steps = $$('.step', road);
-      if (!steps.length) return;
-
-      // Fiecare pas aprins înaintează marcajul cu o fracțiune din traseu.
-      var passed = 0;
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add('is-passed');
-          io.unobserve(entry.target);
-          passed++;
-          road.style.setProperty('--progress', (passed / steps.length).toFixed(3));
-        });
-      }, { rootMargin: '0px 0px -35% 0px', threshold: 0.01 });
-
-      steps.forEach(function (s) { io.observe(s); });
-    });
-  })();
-
-  /* ------------------------------------------------------------------------
-     13. Bandă derulantă — se dublează conținutul pentru buclă continuă
-     ------------------------------------------------------------------------ */
-  (function marquee() {
+  (function marqueeDouble() {
     $$('.marquee__track').forEach(function (track) {
       if (track.getAttribute('data-doubled') === 'true') return;
       // Copia e pur decorativă: se ascunde de la cititoarele de ecran.
@@ -435,7 +635,7 @@
   })();
 
   /* ------------------------------------------------------------------------
-     14. Întrebări frecvente — se închid celelalte la deschidere
+     13. Întrebări frecvente — se închid celelalte la deschidere
      ------------------------------------------------------------------------ */
   (function faq() {
     var groups = $$('[data-faq]');
@@ -457,7 +657,7 @@
   })();
 
   /* ------------------------------------------------------------------------
-     15. Video — pornire fără sunet, control de sunet și de redare
+     14. Video — pornire fără sunet, control de sunet și de redare
      Toate filmările pornesc pe mut (cerință de autoplay în browsere). Butonul
      cu difuzor pornește sunetul doar când vizitatorul îl cere.
      ------------------------------------------------------------------------ */
@@ -520,7 +720,7 @@
 
       if (btn.hasAttribute('data-play')) {
         btn.addEventListener('click', function () {
-          if (v.paused) { play(v); } else { v.pause(); }
+          if (v.paused) { v._userPaused = false; play(v); } else { v._userPaused = true; v.pause(); }
           syncPlayBtn(v);
         });
         v.addEventListener('play', function () { syncPlayBtn(v); });
@@ -540,14 +740,487 @@
        și lățime de bandă. Filmarea cu sunet pornit nu se oprește singură. */
     vids.forEach(function (v) {
       v.muted = true;
-      if (!('IntersectionObserver' in window)) { play(v); return; }
+      if (!hasIO) { play(v); return; }
 
+      var inView = false;
       new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
-          if (entry.isIntersecting) { play(v); }
-          else if (v.muted) { v.pause(); }
+          inView = entry.isIntersecting;
+          if (inView && !v._userPaused) { play(v); }
+          else if (!inView && v.muted) { v.pause(); }
         });
       }, { threshold: 0.25 }).observe(v);
+
+      // Unele browsere opresc singure filmarea cât timp e acoperită (de exemplu
+      // de intro). Dacă nu vizitatorul a oprit-o și e în ecran, o repornim.
+      v.addEventListener('pause', function () {
+        window.setTimeout(function () {
+          if (v.paused && inView && v.muted && !v._userPaused && !document.hidden) play(v);
+        }, 400);
+      });
     });
+  })();
+
+  /* ------------------------------------------------------------------------
+     15. Categorii — panouri cinematice
+     Desktop: panoul peste care treci se lărgește și își pornește filmarea.
+     Telefon: e activ panoul din mijlocul ecranului. Filmările se descarcă
+     doar la prima activare, și deloc dacă vizitatorul are „economisire date".
+     ------------------------------------------------------------------------ */
+  (function panels() {
+    var wrap = $('[data-panels]');
+    if (!wrap) return;
+    var list = $$('.cat-panel', wrap);
+    var saveData = !!(navigator.connection && navigator.connection.saveData);
+    var mobile = window.matchMedia('(max-width: 860px)');
+    var inView = false;
+    var current = $('.cat-panel.is-active', wrap) || list[0];
+
+    function sync() {
+      list.forEach(function (p) {
+        var on = p === current;
+        p.classList.toggle('is-active', on);
+        var v = $('video', p);
+        if (!v) return;
+        if (on && inView && !reduced && !saveData) {
+          if (!v.getAttribute('src') && v.getAttribute('data-src')) v.setAttribute('src', v.getAttribute('data-src'));
+          if (!v._viovas) {
+            v._viovas = true;
+            v.addEventListener('playing', function () {
+              if (p === current) p.classList.add('is-playing');
+            });
+          }
+          var pr = v.play();
+          if (pr && pr.catch) pr.catch(function () {});
+        } else {
+          if (!v.paused) v.pause();
+          p.classList.remove('is-playing');
+        }
+      });
+    }
+    function activate(p) {
+      if (p === current) return;
+      current = p;
+      sync();
+    }
+
+    list.forEach(function (p) {
+      p.addEventListener('mouseenter', function () { if (!mobile.matches) activate(p); });
+      p.addEventListener('focusin', function () { activate(p); });
+    });
+
+    if (!hasIO) return;
+    new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { inView = e.isIntersecting; });
+      sync();
+    }, { threshold: 0.2 }).observe(wrap);
+
+    // Pe telefon: panoul care trece prin banda din mijlocul ecranului
+    var center = new IntersectionObserver(function (entries) {
+      if (!mobile.matches) return;
+      entries.forEach(function (e) { if (e.isIntersecting) activate(e.target); });
+    }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+    list.forEach(function (p) { center.observe(p); });
+  })();
+
+  /* ------------------------------------------------------------------------
+     16. Semafor pe benzile CTA — roșu, apoi verde, iar butonul „pornește"
+     ------------------------------------------------------------------------ */
+  (function semafor() {
+    var bands = $$('.cta-band');
+    if (!bands.length) return;
+    bands.forEach(function (b) {
+      var s = document.createElement('div');
+      s.className = 'semafor';
+      s.setAttribute('aria-hidden', 'true');
+      s.innerHTML = '<i></i><i></i><i></i>';
+      b.appendChild(s);
+    });
+    if (reduced || !hasIO) { bands.forEach(function (b) { b.classList.add('is-go'); }); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        var b = entry.target;
+        io.unobserve(b);
+        b.classList.add('is-red');
+        window.setTimeout(function () { b.classList.remove('is-red'); b.classList.add('is-go'); }, 1100);
+      });
+    }, { threshold: 0.55 });
+    bands.forEach(function (b) { io.observe(b); });
+  })();
+
+  /* ------------------------------------------------------------------------
+     17. Wordmark uriaș în subsol (decorativ)
+     ------------------------------------------------------------------------ */
+  (function footerMark() {
+    var bar = $('.footer__bar');
+    if (!bar) return;
+    var m = document.createElement('p');
+    m.className = 'footer__mark';
+    m.setAttribute('aria-hidden', 'true');
+    m.textContent = 'VIOVAS';
+    bar.parentNode.insertBefore(m, bar);
+    if (reduced) m.style.setProperty('--fill', '1');
+  })();
+
+  /* ------------------------------------------------------------------------
+     18. Motorul de derulare — un singur requestAnimationFrame pentru tot ce
+     urmează derularea: progres, vitezometru, hero, parallax, traseu, video,
+     bandă, subsol. Pozițiile se măsoară o dată (și la redimensionare), iar
+     în fiecare cadru se face doar matematică — fără citiri de layout.
+     ------------------------------------------------------------------------ */
+  var Engine = (function () {
+    var tasks = [];
+    var S = { y: Math.max(0, window.scrollY), vy: 0, vh: window.innerHeight, vw: window.innerWidth, docH: 1 };
+    var running = false, mt = null;
+
+    function measure() {
+      S.vh = window.innerHeight;
+      S.vw = window.innerWidth;
+      S.docH = document.documentElement.scrollHeight;
+      tasks.forEach(function (t) { if (t.measure) t.measure(S); });
+    }
+    function measureSoon() { window.clearTimeout(mt); mt = window.setTimeout(measure, 120); }
+    function frame() {
+      var y = Math.max(0, window.scrollY);
+      var dy = y - S.y;
+      S.y = y;
+      S.vy += (dy - S.vy) * 0.2;
+      if (Math.abs(S.vy) < 0.02) S.vy = 0;
+      for (var i = 0; i < tasks.length; i++) tasks[i].update(S);
+      window.requestAnimationFrame(frame);
+    }
+    function add(task) {
+      tasks.push(task);
+      if (task.measure) task.measure(S);
+      if (running) return;
+      running = true;
+      window.addEventListener('resize', measureSoon);
+      window.addEventListener('load', measure);
+      if ('ResizeObserver' in window) new ResizeObserver(measureSoon).observe(document.body);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+      measure();
+      window.requestAnimationFrame(frame);
+    }
+    return { add: add };
+  })();
+
+  if (!reduced) {
+
+    /* 18a. Bara de progres de sus + vitezometrul (click = înapoi sus) */
+    (function progress() {
+      var wrap = document.createElement('div');
+      wrap.className = 'progress';
+      wrap.setAttribute('aria-hidden', 'true');
+      wrap.innerHTML = '<div class="progress__bar"></div>';
+      document.body.appendChild(wrap);
+      var bar = wrap.firstChild;
+
+      var gauge = document.createElement('button');
+      gauge.type = 'button';
+      gauge.className = 'gauge';
+      gauge.setAttribute('aria-label', 'Înapoi la începutul paginii');
+      var ticks = '';
+      for (var i = 0; i <= 9; i++) {
+        var a = (-135 + i * 30) * Math.PI / 180;
+        var sin = Math.sin(a), cos = Math.cos(a);
+        ticks += '<line class="gauge__tick" x1="' + (50 + sin * 33).toFixed(1) + '" y1="' + (50 - cos * 33).toFixed(1) +
+                 '" x2="' + (50 + sin * 38).toFixed(1) + '" y2="' + (50 - cos * 38).toFixed(1) + '"/>';
+      }
+      gauge.innerHTML =
+        '<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">' +
+          '<defs><linearGradient id="g-grad" x1="0" x2="1"><stop offset="0" stop-color="#F23535"/>' +
+          '<stop offset=".7" stop-color="#FF5A3D"/><stop offset="1" stop-color="#FFC21A"/></linearGradient></defs>' +
+          '<circle class="gauge__track" cx="50" cy="50" r="44" stroke-dasharray="207.3 276.5"/>' +
+          '<circle class="gauge__fill" cx="50" cy="50" r="44" stroke-dasharray="0 276.5"/>' +
+          ticks +
+          '<line class="gauge__needle" x1="50" y1="50" x2="50" y2="20"/>' +
+          '<circle class="gauge__hub" cx="50" cy="50" r="3.5"/>' +
+        '</svg>' +
+        '<span class="gauge__num" aria-hidden="true">0</span><span class="gauge__unit" aria-hidden="true">km/h</span>';
+      document.body.appendChild(gauge);
+      gauge.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+
+      var fill = $('.gauge__fill', gauge), needle = $('.gauge__needle', gauge), num = $('.gauge__num', gauge);
+      var lastP = -1, kmh = 0, lastK = -1, shown = false;
+
+      Engine.add({
+        update: function (S) {
+          var p = clamp(S.y / Math.max(1, S.docH - S.vh), 0, 1);
+          if (Math.abs(p - lastP) > 0.0005) {
+            bar.style.transform = 'scaleX(' + p.toFixed(4) + ')';
+            fill.setAttribute('stroke-dasharray', (207.3 * p).toFixed(1) + ' 276.5');
+            lastP = p;
+          }
+          var vis = S.y > S.vh * 0.6;
+          if (vis !== shown) { gauge.classList.toggle('is-on', vis); shown = vis; }
+          // Viteza de derulare, afișată în „km/h" (maxim 180)
+          kmh += (Math.min(180, Math.abs(S.vy) * 4.5) - kmh) * 0.12;
+          var k = Math.round(kmh);
+          if (k !== lastK) {
+            needle.style.transform = 'rotate(' + (-135 + 270 * kmh / 180).toFixed(1) + 'deg)';
+            num.textContent = k;
+            lastK = k;
+          }
+        }
+      });
+    })();
+
+    /* 18b. Hero — filmarea se strânge într-un cadru, textul urcă și se stinge */
+    (function heroScrub() {
+      var hero = $('.hero');
+      if (!hero) return;
+      var h = 1, last = -1;
+      Engine.add({
+        measure: function () { h = hero.offsetHeight || 1; },
+        update: function (S) {
+          var hp = clamp(S.y / h, 0, 1);
+          if (Math.abs(hp - last) < 0.001) return;
+          hero.style.setProperty('--hp', hp.toFixed(3));
+          last = hp;
+        }
+      });
+
+      // Lumina de far urmărește cursorul
+      var light = $('.hero__light', hero);
+      if (!light || !finePointer) return;
+      hero.addEventListener('mousemove', function (e) {
+        var r = hero.getBoundingClientRect();
+        light.style.setProperty('--lx', (e.clientX - r.left) + 'px');
+        light.style.setProperty('--ly', (e.clientY - r.top) + 'px');
+      });
+    })();
+
+    /* 18c. Parallax — [data-parallax="0.12"]: pozitiv = mai lent (fundal), negativ = mai rapid */
+    (function parallax() {
+      var items = $$('[data-parallax]').map(function (el) {
+        var box = (el.parentElement && el.parentElement.closest('section, div, figure')) || el.parentElement;
+        return { el: el, box: box, speed: parseFloat(el.getAttribute('data-parallax')) || 0, c: 0, h: 0, last: null };
+      });
+      if (!items.length) return;
+      Engine.add({
+        measure: function () {
+          items.forEach(function (it) { it.h = it.box.offsetHeight; it.c = pageTop(it.box) + it.h / 2; });
+        },
+        update: function (S) {
+          items.forEach(function (it) {
+            var dist = it.c - (S.y + S.vh / 2);
+            if (Math.abs(dist) > S.vh + it.h) return;
+            var py = Math.round(-dist * it.speed * 10) / 10;
+            if (py === it.last) return;
+            it.el.style.setProperty('--py', py);
+            it.last = py;
+          });
+        }
+      });
+    })();
+
+    /* 18d. Traseul spre permis — mașinuța coboară, marcajul se desenează în urma ei */
+    (function roadway() {
+      var road = $('[data-roadway]');
+      if (!road) return;
+      var car = $('.roadway__car', road);
+      var steps = $$('.step', road);
+      var top = 0, h = 1, carH = 0, marks = [], lastP = -1;
+      road.classList.add('is-live');
+
+      Engine.add({
+        measure: function () {
+          var r = road.getBoundingClientRect();
+          top = r.top + window.scrollY;
+          h = road.offsetHeight || 1;
+          carH = car ? car.offsetHeight : 0;
+          marks = steps.map(function (s) {
+            var n = $('.step__num', s) || s;
+            var nr = n.getBoundingClientRect();
+            return nr.top - r.top + nr.height / 2;
+          });
+        },
+        update: function (S) {
+          var p = clamp((S.y + S.vh * 0.55 - top) / h, 0, 1);
+          var tilt = clamp(S.vy * 0.35, -7, 7);
+          if (Math.abs(p - lastP) < 0.0005 && Math.abs(tilt) < 0.05) return;
+          lastP = p;
+          var carY = p * (h - carH);
+          road.style.setProperty('--progress', p.toFixed(4));
+          if (car) {
+            car.style.setProperty('--car-y', carY.toFixed(1) + 'px');
+            car.style.setProperty('--car-r', tilt.toFixed(2) + 'deg');
+          }
+          var nose = carY + carH * 0.8;
+          steps.forEach(function (s, i) { s.classList.toggle('is-passed', nose >= marks[i]); });
+        }
+      });
+    })();
+
+    /* 18e. Filmarea care se extinde până la marginile ecranului */
+    (function expand() {
+      var items = $$('[data-expand]').map(function (el) { return { el: el, c: 0, last: -1 }; });
+      if (!items.length) return;
+      Engine.add({
+        measure: function () {
+          items.forEach(function (it) { it.c = pageTop(it.el) + it.el.offsetHeight / 2; });
+        },
+        update: function (S) {
+          items.forEach(function (it) {
+            var dist = it.c - (S.y + S.vh / 2);
+            var e = clamp(1 - Math.max(dist, 0) / (S.vh * 0.6), 0, 1);
+            e = Math.round(e * 1000) / 1000;
+            if (e === it.last) return;
+            it.el.style.setProperty('--e', e);
+            it.last = e;
+          });
+        }
+      });
+    })();
+
+    /* 18f. Banda cu parcul auto — viteza și înclinarea urmează derularea */
+    (function marqueeLive() {
+      var box = $('.marquee');
+      if (!box || !hasIO) return;
+      var rows = $$('.marquee__row', box).map(function (row, i) {
+        return { track: $('.marquee__track', row), dir: i % 2 ? 1 : -1, x: 0, half: 1 };
+      }).filter(function (r) { return r.track; });
+      if (!rows.length) return;
+      var visible = false, sign = 1, hover = false;
+      box.classList.add('is-live');
+      new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { visible = e.isIntersecting; });
+      }).observe(box);
+      box.addEventListener('mouseenter', function () { hover = true; });
+      box.addEventListener('mouseleave', function () { hover = false; });
+
+      Engine.add({
+        measure: function () {
+          rows.forEach(function (r) { r.half = r.track.scrollWidth / 2 || 1; });
+        },
+        update: function (S) {
+          if (!visible) return;
+          if (Math.abs(S.vy) > 0.5) sign = S.vy > 0 ? 1 : -1;
+          var speed = (hover ? 0.25 : 0.9) + Math.abs(S.vy) * 0.55;
+          var skew = clamp(-S.vy * 0.25, -12, 12);
+          rows.forEach(function (r, i) {
+            r.x += speed * sign * r.dir;
+            if (r.x <= -r.half) r.x += r.half;
+            if (r.x > 0) r.x -= r.half;
+            r.track.style.transform = 'translate3d(' + r.x.toFixed(2) + 'px,0,0) skewX(' + (i ? -skew : skew).toFixed(2) + 'deg)';
+          });
+        }
+      });
+    })();
+
+    /* 18g. Wordmark-ul din subsol se umple pe măsură ce ajungi la final */
+    (function footerFill() {
+      var m = $('.footer__mark');
+      if (!m) return;
+      var top = 0, last = -1;
+      Engine.add({
+        measure: function () { top = pageTop(m); },
+        update: function (S) {
+          var f = clamp((S.y + S.vh - top) / Math.max(1, S.docH - top), 0, 1);
+          f = Math.round(f * 1000) / 1000;
+          if (f === last) return;
+          m.style.setProperty('--fill', f);
+          last = f;
+        }
+      });
+    })();
+
+  } else {
+    /* Fără animații: traseul apare desenat complet */
+    $$('[data-roadway]').forEach(function (road) {
+      road.style.setProperty('--progress', '1');
+      $$('.step', road).forEach(function (s) { s.classList.add('is-passed'); });
+    });
+  }
+
+  /* ------------------------------------------------------------------------
+     19. Cursor personalizat — punct + inel cu inerție (doar mouse)
+     ------------------------------------------------------------------------ */
+  (function cursor() {
+    if (reduced || !finePointer) return;
+    var c = document.createElement('div');
+    c.className = 'cursor is-hidden';
+    c.setAttribute('aria-hidden', 'true');
+    c.innerHTML = '<span class="cursor__ring"><span class="cursor__txt"></span></span><span class="cursor__dot"></span>';
+    document.body.appendChild(c);
+    root.classList.add('has-cursor');
+
+    var ring = c.firstChild, dot = c.lastChild, txt = ring.firstChild;
+    var mx = -100, my = -100, rx = -100, ry = -100, raf = null, overField = false;
+
+    function loop() {
+      rx += (mx - rx) * 0.2;
+      ry += (my - ry) * 0.2;
+      ring.style.transform = 'translate3d(' + rx.toFixed(1) + 'px,' + ry.toFixed(1) + 'px,0)';
+      raf = (Math.abs(mx - rx) > 0.1 || Math.abs(my - ry) > 0.1) ? window.requestAnimationFrame(loop) : null;
+    }
+    document.addEventListener('mousemove', function (e) {
+      mx = e.clientX;
+      my = e.clientY;
+      dot.style.transform = 'translate3d(' + mx + 'px,' + my + 'px,0)';
+      c.classList.toggle('is-hidden', overField);
+      if (!raf) raf = window.requestAnimationFrame(loop);
+    }, { passive: true });
+
+    document.addEventListener('mouseover', function (e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      var label = t.closest('[data-cursor]');
+      var link = t.closest('a, button, summary, label, [role="button"], .filter');
+      overField = !!t.closest('input, textarea, select, iframe');
+      c.classList.toggle('is-hidden', overField);
+      if (label) txt.textContent = label.getAttribute('data-cursor');
+      c.classList.toggle('is-label', !!label);
+      c.classList.toggle('is-link', !label && !!link);
+    });
+    document.addEventListener('mousedown', function () { c.classList.add('is-down'); });
+    document.addEventListener('mouseup', function () { c.classList.remove('is-down'); });
+    document.documentElement.addEventListener('mouseleave', function () { c.classList.add('is-hidden'); });
+  })();
+
+  /* ------------------------------------------------------------------------
+     20. Butoane magnetice — se trag ușor spre cursor
+     ------------------------------------------------------------------------ */
+  (function magnetic() {
+    if (reduced || !finePointer) return;
+    $$('.btn, .phone-xl, .wa-float, .socials a, .intro__skip').forEach(function (el) {
+      el.classList.add('is-magnetic');
+      var cx = 0, cy = 0;
+      el.addEventListener('mousemove', function (e) {
+        var r = el.getBoundingClientRect();
+        var k = r.width > 300 ? 0.08 : (el.classList.contains('phone-xl') ? 0.14 : 0.3);
+        // Centrul real, fără deplasarea deja aplicată
+        var x = e.clientX - (r.left - cx + r.width / 2);
+        var y = e.clientY - (r.top - cy + r.height / 2);
+        cx = x * k;
+        cy = y * k * 1.2;
+        el.classList.add('is-pulling');
+        el.style.setProperty('--mgx', cx.toFixed(1) + 'px');
+        el.style.setProperty('--mgy', cy.toFixed(1) + 'px');
+      });
+      el.addEventListener('mouseleave', function () {
+        cx = cy = 0;
+        el.classList.remove('is-pulling');
+        el.style.setProperty('--mgx', '0px');
+        el.style.setProperty('--mgy', '0px');
+      });
+    });
+  })();
+
+  /* ------------------------------------------------------------------------
+     21. Carduri „spotlight" — o lumină moale urmărește cursorul
+     ------------------------------------------------------------------------ */
+  (function spotlight() {
+    if (reduced || !finePointer) return;
+    $$('.feat, .price-card, .review, .fleet, .doc, .step__body, .info-card, .age, .faq__item, .trust__item')
+      .forEach(function (el) {
+        el.classList.add('spot');
+        el.addEventListener('mousemove', function (e) {
+          var r = el.getBoundingClientRect();
+          el.style.setProperty('--sx', (e.clientX - r.left).toFixed(0) + 'px');
+          el.style.setProperty('--sy', (e.clientY - r.top).toFixed(0) + 'px');
+        });
+      });
   })();
 })();

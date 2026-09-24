@@ -29,7 +29,8 @@
 
 <link rel="preload" href="assets/fonts/mulish-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/mulish-latin-ext.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css?v=2">
+<link rel="stylesheet" href="assets/css/style.css?v=3">
+<script>document.documentElement.classList.add('js');</script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -128,6 +129,16 @@
       <div class="hero__actions u-mt-2">
         <a class="btn btn--lg" href="index.html">Înapoi la pagina principală <svg class="ico" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         <a class="btn btn--lg btn--ghost" href="tel:+40232234000"><svg class="ico" aria-hidden="true"><use href="#i-phone"/></svg> 0232 234 000</a>
+      </div>
+
+      <!-- Scenă decorativă: mașina școlii frânează în fața indicatorului -->
+      <div class="lost" aria-hidden="true">
+        <span class="lost__road"></span>
+        <span class="lost__sign"><i></i></span>
+        <span class="lost__car">
+          <img src="assets/img/yaris-brandat.webp" alt="" width="735" height="401" decoding="async">
+          <span class="lost__brake"></span>
+        </span>
       </div>
     </div>
   </section>
@@ -265,6 +276,6 @@
   </div>
 </div>
 
-<script src="assets/js/main.js?v=2" defer></script>
+<script src="assets/js/main.js?v=3" defer></script>
 </body>
 </html>

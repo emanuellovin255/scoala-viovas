@@ -28,9 +28,25 @@
 <link rel="apple-touch-icon" href="assets/img/favicon-180.png">
 <link rel="manifest" href="site.webmanifest">
 
+<!-- Intro: rulează o dată pe sesiune de browser. Clasa se pune înainte de CSS,
+     ca overlay-ul să fie vizibil din primul cadru, fără să se vadă site-ul dedesubt.
+     Ca să oprești definitiv intro-ul, șterge acest script și blocul .intro din <body>. -->
+<script>
+(function () {
+  var d = document.documentElement, seen = null;
+  d.classList.add('js');
+  try { seen = window.sessionStorage.getItem('viovas-intro'); } catch (e) { seen = '1'; }
+  if (seen || !window.matchMedia || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  d.classList.add('intro-on');
+  // Plasă de siguranță: dacă main.js nu pornește, intro-ul dispare oricum.
+  window.setTimeout(function () { d.classList.add('intro-open'); d.classList.remove('intro-on'); }, 8000);
+})();
+</script>
+
+<link rel="preload" href="assets/img/yaris-brandat.webp" as="image" type="image/webp" fetchpriority="high">
 <link rel="preload" href="assets/fonts/mulish-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/mulish-latin-ext.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css?v=2">
+<link rel="stylesheet" href="assets/css/style.css?v=3">
 
 <script type="application/ld+json">
 {
@@ -240,6 +256,33 @@
 </head>
 
 <body>
+<!-- ===================== INTRO — mașina Viovas pe drum ===================== -->
+<div class="intro" id="intro">
+  <div class="intro__half intro__half--top" aria-hidden="true">
+    <div class="intro__title">
+      <span class="intro__mark"><img src="assets/img/logo@2x.png" alt="" width="400" height="340"></span>
+      <span class="intro__kicker" data-letters>Școala de șoferi</span>
+      <span class="intro__name" data-letters>VIOVAS</span>
+      <span class="intro__tag"><span>Performanță în pilotaj</span><i></i><span>din 2006</span></span>
+    </div>
+    <span class="intro__trail intro__trail--l"></span>
+    <span class="intro__trail intro__trail--r"></span>
+    <div class="intro__car">
+      <div class="intro__rig">
+        <span class="intro__speed"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="intro__shadow"></span>
+        <img class="intro__ghost intro__ghost--far" src="assets/img/yaris-brandat.webp" alt="" width="735" height="401">
+        <img class="intro__ghost" src="assets/img/yaris-brandat.webp" alt="" width="735" height="401">
+        <img class="intro__body" src="assets/img/yaris-brandat.webp" alt="" width="735" height="401">
+        <span class="intro__brake"></span>
+        <span class="intro__beam"></span>
+      </div>
+    </div>
+  </div>
+  <div class="intro__half intro__half--bot" aria-hidden="true"></div>
+  <button class="intro__skip" type="button">Sari peste <svg class="ico" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+</div>
+
 <a class="skip-link" href="#main">Sari la conținut</a>
 
 <!-- ===================== SPRITE DE ICONURI ===================== -->
@@ -336,24 +379,27 @@
       </picture>
     </div>
     <div class="hero__scrim"></div>
+    <div class="hero__light" aria-hidden="true"></div>
+    <div class="hero__frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <p class="hero__side" aria-hidden="true">Școala auto · Iași · din 2006</p>
 
     <div class="hero__inner wrap wrap--wide">
       <div class="hero__content">
         <!-- EDITEAZĂ AICI data următoarei serii de cursuri -->
-        <p class="badge-serie">
+        <p class="badge-serie hero__in" style="--hd:0">
           <span class="pulse" aria-hidden="true"></span>
           <span>Următoarea serie de cursuri: <strong>24 august 2026</strong></span>
         </p>
 
         <h1 data-split>Învață cu <span class="accent">Viovas!</span></h1>
 
-        <p class="hero__tag">
+        <p class="hero__tag hero__in" style="--hd:5">
           <span>Performanță în pilotaj</span>
           <span>Profesionalism</span>
           <span>Experiență</span>
         </p>
 
-        <div class="hero__actions">
+        <div class="hero__actions hero__in" style="--hd:6">
           <a class="btn btn--lg" href="categorii.html">
             Vezi categoriile <svg class="ico" aria-hidden="true"><use href="#i-arrow"/></svg>
           </a>
@@ -371,7 +417,7 @@
     </button>
 
     <div class="scroll-cue" aria-hidden="true">
-      <span class="scroll-cue__track"></span>
+      <span class="scroll-cue__track"><i></i></span>
       <span>Derulează</span>
     </div>
   </section>
@@ -401,16 +447,30 @@
   </section>
 
   <!-- ===================== PARCUL AUTO — BANDĂ ===================== -->
+  <!-- Două rânduri în sensuri opuse; viteza lor urmează viteza de derulare.
+       Fiecare rând se scrie o singură dată — JavaScript îl dublează pentru buclă. -->
   <section class="marquee" aria-label="Vehiculele din parcul auto Viovas">
-    <div class="marquee__track">
-      <span class="marquee__item"><svg class="ico" aria-hidden="true"><use href="#i-car"/></svg>Seat Ibiza</span>
-      <span class="marquee__item"><svg class="ico" aria-hidden="true"><use href="#i-car"/></svg>Volkswagen Golf 7</span>
-      <span class="marquee__item"><svg class="ico" aria-hidden="true"><use href="#i-car"/></svg>Volkswagen Golf 8</span>
-      <span class="marquee__item"><svg class="ico" aria-hidden="true"><use href="#i-car"/></svg>Toyota Yaris</span>
-      <span class="marquee__item"><svg class="ico" aria-hidden="true"><use href="#i-bike"/></svg>Motociclete Honda</span>
-      <span class="marquee__item"><svg class="ico" aria-hidden="true"><use href="#i-truck"/></svg>Camion MAN</span>
-      <span class="marquee__item"><svg class="ico" aria-hidden="true"><use href="#i-truck"/></svg>Mercedes-Benz Atego</span>
-      <span class="marquee__item"><svg class="ico" aria-hidden="true"><use href="#i-bus"/></svg>Autobuz Mercedes-Benz</span>
+    <div class="marquee__row">
+      <div class="marquee__track">
+        <span class="marquee__item"><svg class="ico" aria-hidden="true"><use href="#i-car"/></svg>Seat Ibiza</span>
+        <span class="marquee__item"><svg class="ico" aria-hidden="true"><use href="#i-car"/></svg>Volkswagen Golf 7</span>
+        <span class="marquee__item"><svg class="ico" aria-hidden="true"><use href="#i-car"/></svg>Volkswagen Golf 8</span>
+        <span class="marquee__item"><svg class="ico" aria-hidden="true"><use href="#i-car"/></svg>Toyota Yaris</span>
+        <span class="marquee__item"><svg class="ico" aria-hidden="true"><use href="#i-bike"/></svg>Motociclete Honda</span>
+        <span class="marquee__item"><svg class="ico" aria-hidden="true"><use href="#i-truck"/></svg>Camion MAN</span>
+        <span class="marquee__item"><svg class="ico" aria-hidden="true"><use href="#i-truck"/></svg>Mercedes-Benz Atego</span>
+        <span class="marquee__item"><svg class="ico" aria-hidden="true"><use href="#i-bus"/></svg>Autobuz Mercedes-Benz</span>
+      </div>
+    </div>
+    <div class="marquee__row marquee__row--rev" aria-hidden="true">
+      <div class="marquee__track">
+        <span class="marquee__item">Categoria B</span>
+        <span class="marquee__item">Categoria A / A1</span>
+        <span class="marquee__item">Categoria C</span>
+        <span class="marquee__item">Categoria CE</span>
+        <span class="marquee__item">Categoria D</span>
+        <span class="marquee__item">Din 2006, în Iași</span>
+      </div>
     </div>
   </section>
 
@@ -436,12 +496,14 @@
           </div>
         </div>
 
-        <div class="split__media split__media--float" data-reveal>
-          <picture>
-            <source srcset="assets/img/yaris-brandat.webp" type="image/webp">
-            <img src="assets/img/yaris-brandat.png" width="735" height="401"
-                 alt="Autoturism Toyota Yaris din parcul auto Viovas, personalizat cu sigla școlii" loading="lazy" decoding="async">
-          </picture>
+        <div class="split__media split__media--float" data-reveal="drive">
+          <div class="split__car" data-parallax="-0.06">
+            <picture>
+              <source srcset="assets/img/yaris-brandat.webp" type="image/webp">
+              <img src="assets/img/yaris-brandat.png" width="735" height="401"
+                   alt="Autoturism Toyota Yaris din parcul auto Viovas, personalizat cu sigla școlii" loading="lazy" decoding="async">
+            </picture>
+          </div>
         </div>
       </div>
     </div>
@@ -456,49 +518,72 @@
         <p>Urmează cursurile unei școli de șoferi cu tradiție și câștigă libertatea ta de mișcare! Rata mare de promovabilitate din rândul cursanților și profesionalismul instructorilor ne recomandă. Poți alege următoarele categorii: A/A1, B, C, CE și D.</p>
       </div>
 
-      <div class="cat-grid">
-        <article class="cat-card" data-reveal data-tilt>
-          <svg class="ghost-ico" aria-hidden="true"><use href="#i-car"/></svg>
-          <span class="cat-card__mark" aria-hidden="true">B</span>
-          <h3>Categoria B</h3>
-          <p>Autoturismul — categoria cu care începe majoritatea. Înveți pe mașini cu cutie manuală sau automată, la alegere.</p>
-          <div class="cat-card__meta">
-            <span class="chip chip--price">3000 lei</span>
-            <span class="chip"><svg class="ico" aria-hidden="true"><use href="#i-clock"/></svg> min. 4 săptămâni</span>
-            <span class="chip"><svg class="ico" aria-hidden="true"><use href="#i-car"/></svg> 6 autoturisme</span>
+      <!-- Panouri cinematice: panoul activ se lărgește și își pornește filmarea.
+           Filmările se descarcă doar când panoul devine activ (data-src). -->
+      <div class="cat-panels" data-panels>
+        <article class="cat-panel is-active" data-reveal data-cursor="Vezi">
+          <div class="cat-panel__media" aria-hidden="true">
+            <picture>
+              <source srcset="assets/img/hero-poster.webp?v=2" type="image/webp">
+              <img src="assets/img/hero-poster.jpg?v=2" alt="" width="1920" height="1080" loading="lazy" decoding="async">
+            </picture>
+            <video muted loop playsinline preload="none" tabindex="-1" data-src="assets/video/viovas-hero.mp4?v=2"></video>
           </div>
-          <div class="cat-card__foot">
-            <a class="arrow-link" href="categorii.html#cat-b">Vezi detalii <svg class="ico" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-          </div>
-        </article>
-
-        <article class="cat-card" data-reveal data-tilt>
-          <svg class="ghost-ico" aria-hidden="true"><use href="#i-bike"/></svg>
-          <span class="cat-card__mark" aria-hidden="true">A</span>
-          <h3>Categoria A / A1</h3>
-          <p>Motocicleta, pe poligon și în trafic. Acoperim categoriile A, A1, A2 și 125B, pe motociclete Honda.</p>
-          <div class="cat-card__meta">
-            <span class="chip chip--price">3000 lei</span>
-            <span class="chip"><svg class="ico" aria-hidden="true"><use href="#i-clock"/></svg> min. 4 săptămâni</span>
-            <span class="chip"><svg class="ico" aria-hidden="true"><use href="#i-bike"/></svg> Honda</span>
-          </div>
-          <div class="cat-card__foot">
-            <a class="arrow-link" href="categorii.html#cat-a">Vezi detalii <svg class="ico" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          <span class="cat-panel__letter" aria-hidden="true">B</span>
+          <div class="cat-panel__body">
+            <span class="cat-panel__icon" aria-hidden="true"><svg class="ico"><use href="#i-car"/></svg></span>
+            <h3>Categoria B</h3>
+            <p>Autoturismul — categoria cu care începe majoritatea. Înveți pe mașini cu cutie manuală sau automată, la alegere.</p>
+            <div class="cat-card__meta">
+              <span class="chip chip--price">3000 lei</span>
+              <span class="chip"><svg class="ico" aria-hidden="true"><use href="#i-clock"/></svg> min. 4 săptămâni</span>
+              <span class="chip"><svg class="ico" aria-hidden="true"><use href="#i-car"/></svg> 6 autoturisme</span>
+            </div>
+            <a class="arrow-link cat-panel__link" href="categorii.html#cat-b">Vezi detalii <svg class="ico" aria-hidden="true"><use href="#i-arrow"/></svg></a>
           </div>
         </article>
 
-        <article class="cat-card cat-card--blue" data-reveal data-tilt>
-          <svg class="ghost-ico" aria-hidden="true"><use href="#i-truck"/></svg>
-          <span class="cat-card__mark" aria-hidden="true">C·D</span>
-          <h3>Categoriile C, CE și D</h3>
-          <p>Camion, ansamblu cu remorcă și autobuz. Pentru cine își face din condus o meserie, pe MAN și Mercedes-Benz.</p>
-          <div class="cat-card__meta">
-            <span class="chip chip--price">de la 1700 lei</span>
-            <span class="chip"><svg class="ico" aria-hidden="true"><use href="#i-truck"/></svg> MAN · Atego</span>
-            <span class="chip"><svg class="ico" aria-hidden="true"><use href="#i-bus"/></svg> Autobuz</span>
+        <article class="cat-panel" data-reveal data-cursor="Vezi">
+          <div class="cat-panel__media" aria-hidden="true">
+            <picture>
+              <source srcset="assets/img/cat-a-poster.webp" type="image/webp">
+              <img src="assets/img/cat-a-poster.jpg" alt="" width="1280" height="720" loading="lazy" decoding="async">
+            </picture>
+            <video muted loop playsinline preload="none" tabindex="-1" data-src="assets/video/viovas-cat-a.mp4"></video>
           </div>
-          <div class="cat-card__foot">
-            <a class="arrow-link" href="categorii.html#cat-cd">Vezi detalii <svg class="ico" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          <span class="cat-panel__letter" aria-hidden="true">A</span>
+          <div class="cat-panel__body">
+            <span class="cat-panel__icon" aria-hidden="true"><svg class="ico"><use href="#i-bike"/></svg></span>
+            <h3>Categoria A / A1</h3>
+            <p>Motocicleta, pe poligon și în trafic. Acoperim categoriile A, A1, A2 și 125B, pe motociclete Honda.</p>
+            <div class="cat-card__meta">
+              <span class="chip chip--price">3000 lei</span>
+              <span class="chip"><svg class="ico" aria-hidden="true"><use href="#i-clock"/></svg> min. 4 săptămâni</span>
+              <span class="chip"><svg class="ico" aria-hidden="true"><use href="#i-bike"/></svg> Honda</span>
+            </div>
+            <a class="arrow-link cat-panel__link" href="categorii.html#cat-a">Vezi detalii <svg class="ico" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          </div>
+        </article>
+
+        <article class="cat-panel cat-panel--blue" data-reveal data-cursor="Vezi">
+          <div class="cat-panel__media" aria-hidden="true">
+            <picture>
+              <source srcset="assets/img/cat-c-poster.webp" type="image/webp">
+              <img src="assets/img/cat-c-poster.jpg" alt="" width="1280" height="720" loading="lazy" decoding="async">
+            </picture>
+            <video muted loop playsinline preload="none" tabindex="-1" data-src="assets/video/viovas-cat-c.mp4"></video>
+          </div>
+          <span class="cat-panel__letter" aria-hidden="true">C·D</span>
+          <div class="cat-panel__body">
+            <span class="cat-panel__icon" aria-hidden="true"><svg class="ico"><use href="#i-truck"/></svg></span>
+            <h3>Categoriile C, CE și D</h3>
+            <p>Camion, ansamblu cu remorcă și autobuz. Pentru cine își face din condus o meserie, pe MAN și Mercedes-Benz.</p>
+            <div class="cat-card__meta">
+              <span class="chip chip--price">de la 1700 lei</span>
+              <span class="chip"><svg class="ico" aria-hidden="true"><use href="#i-truck"/></svg> MAN · Atego</span>
+              <span class="chip"><svg class="ico" aria-hidden="true"><use href="#i-bus"/></svg> Autobuz</span>
+            </div>
+            <a class="arrow-link cat-panel__link" href="categorii.html#cat-cd">Vezi detalii <svg class="ico" aria-hidden="true"><use href="#i-arrow"/></svg></a>
           </div>
         </article>
       </div>
@@ -516,6 +601,29 @@
 
       <div class="roadway" data-roadway>
         <span class="roadway__rail" aria-hidden="true"></span>
+        <!-- Mașina școlii, văzută de sus: coboară pe traseu odată cu derularea -->
+        <span class="roadway__car" aria-hidden="true">
+          <svg viewBox="0 0 28 52" width="28" height="52" focusable="false">
+            <defs>
+              <linearGradient id="rc-body" x1="0" x2="1">
+                <stop offset="0" stop-color="#D9E0E6"/><stop offset=".5" stop-color="#FFFFFF"/><stop offset="1" stop-color="#D9E0E6"/>
+              </linearGradient>
+            </defs>
+            <path d="M14 1c7 0 11 3 11.5 9l.5 31c0 6-4 10-12 10S2 47 2 41l.5-31C3 4 7 1 14 1z" fill="url(#rc-body)"/>
+            <rect x="0" y="27" width="3" height="4" rx="1.2" fill="#C9D1D8"/>
+            <rect x="25" y="27" width="3" height="4" rx="1.2" fill="#C9D1D8"/>
+            <path d="M6 9.5c2.5-1.3 13.5-1.3 16 0l-1 5.5H7z" fill="#1A232C"/>
+            <path d="M5.5 33.5h17l-1.5 7.5c-3.5 1.4-9.5 1.4-13 0z" fill="#1A232C"/>
+            <rect x="6.5" y="16" width="15" height="16.5" rx="3" fill="#EEF2F5"/>
+            <rect x="9.5" y="21" width="9" height="5" rx="1" fill="#FF8A1F"/>
+            <path d="M3.5 30 24.5 22" stroke="#F23535" stroke-width="2.4"/>
+            <rect x="4.5" y="2.6" width="5" height="2" rx="1" fill="#F23535"/>
+            <rect x="18.5" y="2.6" width="5" height="2" rx="1" fill="#F23535"/>
+            <rect x="4" y="47.4" width="5.5" height="2" rx="1" fill="#FFF3C4"/>
+            <rect x="18.5" y="47.4" width="5.5" height="2" rx="1" fill="#FFF3C4"/>
+          </svg>
+          <span class="roadway__beam"></span>
+        </span>
         <ol class="roadway__steps">
 
           <li class="step" data-reveal>
@@ -623,7 +731,7 @@
         <p>Poligon propriu, motociclete de ultimă generație și instructori care conduc alături de tine. Apasă pe difuzor dacă vrei și sunetul.</p>
       </div>
 
-      <figure class="vid" data-reveal>
+      <figure class="vid vid--expand" data-expand>
         <video id="v-mijloc" class="vid__el" data-autoplay muted loop playsinline preload="none"
                poster="assets/img/mijloc-poster.jpg" tabindex="-1"
                aria-label="Filmare de prezentare Viovas: motociclete și pregătire pe poligon">
@@ -682,7 +790,7 @@
   <section class="band">
     <picture>
       <source srcset="assets/img/sala-cursuri.webp" type="image/webp">
-      <img class="band__bg" src="assets/img/sala-cursuri.jpg" width="1920" height="450"
+      <img class="band__bg" data-parallax="0.12" src="assets/img/sala-cursuri.jpg" width="1920" height="450"
            alt="Cursanți în sala de curs Viovas, în timpul unei lecții de legislație rutieră"
            loading="lazy" decoding="async">
     </picture>
@@ -970,6 +1078,6 @@
   </div>
 </div>
 
-<script src="assets/js/main.js?v=2" defer></script>
+<script src="assets/js/main.js?v=3" defer></script>
 </body>
 </html>

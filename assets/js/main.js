@@ -850,6 +850,19 @@
   })();
 
   /* ------------------------------------------------------------------------
+     16b. Drumul din antetul paginilor interioare — marcajul din mijloc devine
+     un element propriu, ca să alunece doar din transform (fără redesenare)
+     ------------------------------------------------------------------------ */
+  $$('.pagehead').forEach(function (h) {
+    var road = document.createElement('div');
+    road.className = 'pagehead__road';
+    road.setAttribute('aria-hidden', 'true');
+    road.appendChild(document.createElement('i'));
+    h.insertBefore(road, h.firstChild);
+    h.classList.add('has-road');
+  });
+
+  /* ------------------------------------------------------------------------
      17. Wordmark uriaș în subsol (decorativ)
      ------------------------------------------------------------------------ */
   (function footerMark() {
@@ -859,8 +872,15 @@
     m.className = 'footer__mark';
     m.setAttribute('aria-hidden', 'true');
     m.textContent = 'VIOVAS';
+    // Umplerea roșie: o fereastră care urcă și textul care coboară la fel de mult
+    var fill = document.createElement('span');
+    fill.className = 'footer__fill';
+    var inner = document.createElement('span');
+    inner.textContent = 'VIOVAS';
+    fill.appendChild(inner);
+    m.appendChild(fill);
     bar.parentNode.insertBefore(m, bar);
-    if (reduced) m.style.setProperty('--fill', '1');
+    if (reduced) { fill.style.transform = 'none'; inner.style.transform = 'none'; }
   })();
 
   /* ------------------------------------------------------------------------
@@ -868,41 +888,48 @@
      urmează derularea: progres, vitezometru, hero, parallax, traseu, video,
      bandă, subsol. Pozițiile se măsoară o dată (și la redimensionare), iar
      în fiecare cadru se face doar matematică — fără citiri de layout.
+     Bucla se oprește când nimic nu se mișcă și pornește la derulare; scrie
+     doar transform/opacity direct pe elemente, fără variabile CSS moștenite.
      ------------------------------------------------------------------------ */
   var Engine = (function () {
     var tasks = [];
     var S = { y: Math.max(0, window.scrollY), vy: 0, vh: window.innerHeight, vw: window.innerWidth, docH: 1 };
-    var running = false, mt = null;
+    var started = false, raf = null, mt = null;
 
     function measure() {
       S.vh = window.innerHeight;
       S.vw = window.innerWidth;
       S.docH = document.documentElement.scrollHeight;
       tasks.forEach(function (t) { if (t.measure) t.measure(S); });
+      wake();
     }
     function measureSoon() { window.clearTimeout(mt); mt = window.setTimeout(measure, 120); }
     function frame() {
+      raf = null;
       var y = Math.max(0, window.scrollY);
       var dy = y - S.y;
       S.y = y;
       S.vy += (dy - S.vy) * 0.2;
       if (Math.abs(S.vy) < 0.02) S.vy = 0;
-      for (var i = 0; i < tasks.length; i++) tasks[i].update(S);
-      window.requestAnimationFrame(frame);
+      // Un task întoarce true cât timp mai are nevoie de cadre (bandă, ac)
+      var more = dy !== 0 || S.vy !== 0;
+      for (var i = 0; i < tasks.length; i++) if (tasks[i].update(S)) more = true;
+      if (more) raf = window.requestAnimationFrame(frame);
     }
+    function wake() { if (!raf) raf = window.requestAnimationFrame(frame); }
     function add(task) {
       tasks.push(task);
       if (task.measure) task.measure(S);
-      if (running) return;
-      running = true;
+      if (started) { wake(); return; }
+      started = true;
+      window.addEventListener('scroll', wake, { passive: true });
       window.addEventListener('resize', measureSoon);
       window.addEventListener('load', measure);
       if ('ResizeObserver' in window) new ResizeObserver(measureSoon).observe(document.body);
       if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
       measure();
-      window.requestAnimationFrame(frame);
     }
-    return { add: add };
+    return { add: add, wake: wake };
   })();
 
   if (!reduced) {
@@ -962,6 +989,7 @@
             num.textContent = k;
             lastK = k;
           }
+          return k !== 0;
         }
       });
     })();
@@ -970,25 +998,38 @@
     (function heroScrub() {
       var hero = $('.hero');
       if (!hero) return;
-      var h = 1, last = -1;
+      var media = $('.hero__media', hero), content = $('.hero__content', hero), corners = $('.hero__frame', hero);
+      var h = 1, last = -1, framed = false;
       Engine.add({
         measure: function () { h = hero.offsetHeight || 1; },
         update: function (S) {
           var hp = clamp(S.y / h, 0, 1);
           if (Math.abs(hp - last) < 0.001) return;
-          hero.style.setProperty('--hp', hp.toFixed(3));
           last = hp;
+          if (media) media.style.transform = 'scale(' + (1 - hp * 0.1).toFixed(4) + ')';
+          if (content) {
+            content.style.transform = 'translate3d(0,' + (hp * -90).toFixed(1) + 'px,0)';
+            content.style.opacity = clamp(1 - hp * 1.35, 0, 1).toFixed(3);
+          }
+          if (corners) corners.style.opacity = clamp(0.9 - hp * 2, 0, 1).toFixed(3);
+          var f = hp > 0.01;
+          if (f !== framed) { hero.classList.toggle('is-framed', f); framed = f; }
         }
       });
 
-      // Lumina de far urmărește cursorul
+      // Lumina de far urmărește cursorul (o pată care se mută, nu un gradient redesenat)
       var light = $('.hero__light', hero);
       if (!light || !finePointer) return;
+      var lx = 0, ly = 0, lraf = null;
       hero.addEventListener('mousemove', function (e) {
-        var r = hero.getBoundingClientRect();
-        light.style.setProperty('--lx', (e.clientX - r.left) + 'px');
-        light.style.setProperty('--ly', (e.clientY - r.top) + 'px');
-      });
+        lx = e.clientX; ly = e.clientY;
+        if (lraf) return;
+        lraf = window.requestAnimationFrame(function () {
+          lraf = null;
+          var r = hero.getBoundingClientRect();
+          light.style.transform = 'translate3d(' + (lx - r.left).toFixed(0) + 'px,' + (ly - r.top).toFixed(0) + 'px,0)';
+        });
+      }, { passive: true });
     })();
 
     /* 18c. Parallax — [data-parallax="0.12"]: pozitiv = mai lent (fundal), negativ = mai rapid */
@@ -1008,7 +1049,7 @@
             if (Math.abs(dist) > S.vh + it.h) return;
             var py = Math.round(-dist * it.speed * 10) / 10;
             if (py === it.last) return;
-            it.el.style.setProperty('--py', py);
+            it.el.style.translate = '0 ' + py + 'px';
             it.last = py;
           });
         }
@@ -1020,6 +1061,7 @@
       var road = $('[data-roadway]');
       if (!road) return;
       var car = $('.roadway__car', road);
+      var rail = $('.roadway__rail', road) || road;
       var steps = $$('.step', road);
       var top = 0, h = 1, carH = 0, marks = [], lastP = -1;
       road.classList.add('is-live');
@@ -1042,10 +1084,10 @@
           if (Math.abs(p - lastP) < 0.0005 && Math.abs(tilt) < 0.05) return;
           lastP = p;
           var carY = p * (h - carH);
-          road.style.setProperty('--progress', p.toFixed(4));
+          rail.style.setProperty('--progress', p.toFixed(4));
           if (car) {
-            car.style.setProperty('--car-y', carY.toFixed(1) + 'px');
-            car.style.setProperty('--car-r', tilt.toFixed(2) + 'deg');
+            car.style.translate = '0 ' + carY.toFixed(1) + 'px';
+            car.style.rotate = tilt.toFixed(2) + 'deg';
           }
           var nose = carY + carH * 0.8;
           steps.forEach(function (s, i) { s.classList.toggle('is-passed', nose >= marks[i]); });
@@ -1055,11 +1097,15 @@
 
     /* 18e. Filmarea care se extinde până la marginile ecranului */
     (function expand() {
-      var items = $$('[data-expand]').map(function (el) { return { el: el, c: 0, last: -1 }; });
+      var items = $$('[data-expand]').map(function (el) { return { el: el, c: 0, last: -1, framed: false }; });
       if (!items.length) return;
       Engine.add({
         measure: function () {
-          items.forEach(function (it) { it.c = pageTop(it.el) + it.el.offsetHeight / 2; });
+          // Centrul nu se schimbă la scale din centru, deci măsurătoarea e stabilă
+          items.forEach(function (it) {
+            var r = it.el.getBoundingClientRect();
+            it.c = r.top + window.scrollY + r.height / 2;
+          });
         },
         update: function (S) {
           items.forEach(function (it) {
@@ -1067,7 +1113,9 @@
             var e = clamp(1 - Math.max(dist, 0) / (S.vh * 0.6), 0, 1);
             e = Math.round(e * 1000) / 1000;
             if (e === it.last) return;
-            it.el.style.setProperty('--e', e);
+            it.el.style.transform = e >= 1 ? 'none' : 'scale(' + (0.72 + 0.28 * e).toFixed(4) + ')';
+            var fr = e < 0.995;
+            if (fr !== it.framed) { it.el.classList.toggle('is-framed', fr); it.framed = fr; }
             it.last = e;
           });
         }
@@ -1086,6 +1134,7 @@
       box.classList.add('is-live');
       new IntersectionObserver(function (entries) {
         entries.forEach(function (e) { visible = e.isIntersecting; });
+        if (visible) Engine.wake();
       }).observe(box);
       box.addEventListener('mouseenter', function () { hover = true; });
       box.addEventListener('mouseleave', function () { hover = false; });
@@ -1105,6 +1154,7 @@
             if (r.x > 0) r.x -= r.half;
             r.track.style.transform = 'translate3d(' + r.x.toFixed(2) + 'px,0,0) skewX(' + (i ? -skew : skew).toFixed(2) + 'deg)';
           });
+          return true;
         }
       });
     })();
@@ -1112,7 +1162,9 @@
     /* 18g. Wordmark-ul din subsol se umple pe măsură ce ajungi la final */
     (function footerFill() {
       var m = $('.footer__mark');
-      if (!m) return;
+      var fill = m && $('.footer__fill', m);
+      if (!fill) return;
+      var inner = fill.firstChild;
       var top = 0, last = -1;
       Engine.add({
         measure: function () { top = pageTop(m); },
@@ -1120,7 +1172,9 @@
           var f = clamp((S.y + S.vh - top) / Math.max(1, S.docH - top), 0, 1);
           f = Math.round(f * 1000) / 1000;
           if (f === last) return;
-          m.style.setProperty('--fill', f);
+          var q = ((1 - f) * 100).toFixed(1);
+          fill.style.transform = 'translate3d(0,' + q + '%,0)';
+          inner.style.transform = 'translate3d(0,-' + q + '%,0)';
           last = f;
         }
       });
@@ -1135,71 +1189,32 @@
   }
 
   /* ------------------------------------------------------------------------
-     19. Cursor personalizat — punct + inel cu inerție (doar mouse)
-     ------------------------------------------------------------------------ */
-  (function cursor() {
-    if (reduced || !finePointer) return;
-    var c = document.createElement('div');
-    c.className = 'cursor is-hidden';
-    c.setAttribute('aria-hidden', 'true');
-    c.innerHTML = '<span class="cursor__ring"><span class="cursor__txt"></span></span><span class="cursor__dot"></span>';
-    document.body.appendChild(c);
-    root.classList.add('has-cursor');
-
-    var ring = c.firstChild, dot = c.lastChild, txt = ring.firstChild;
-    var mx = -100, my = -100, rx = -100, ry = -100, raf = null, overField = false;
-
-    function loop() {
-      rx += (mx - rx) * 0.2;
-      ry += (my - ry) * 0.2;
-      ring.style.transform = 'translate3d(' + rx.toFixed(1) + 'px,' + ry.toFixed(1) + 'px,0)';
-      raf = (Math.abs(mx - rx) > 0.1 || Math.abs(my - ry) > 0.1) ? window.requestAnimationFrame(loop) : null;
-    }
-    document.addEventListener('mousemove', function (e) {
-      mx = e.clientX;
-      my = e.clientY;
-      dot.style.transform = 'translate3d(' + mx + 'px,' + my + 'px,0)';
-      c.classList.toggle('is-hidden', overField);
-      if (!raf) raf = window.requestAnimationFrame(loop);
-    }, { passive: true });
-
-    document.addEventListener('mouseover', function (e) {
-      var t = e.target;
-      if (!t || !t.closest) return;
-      var label = t.closest('[data-cursor]');
-      var link = t.closest('a, button, summary, label, [role="button"], .filter');
-      overField = !!t.closest('input, textarea, select, iframe');
-      c.classList.toggle('is-hidden', overField);
-      if (label) txt.textContent = label.getAttribute('data-cursor');
-      c.classList.toggle('is-label', !!label);
-      c.classList.toggle('is-link', !label && !!link);
-    });
-    document.addEventListener('mousedown', function () { c.classList.add('is-down'); });
-    document.addEventListener('mouseup', function () { c.classList.remove('is-down'); });
-    document.documentElement.addEventListener('mouseleave', function () { c.classList.add('is-hidden'); });
-  })();
-
-  /* ------------------------------------------------------------------------
      20. Butoane magnetice — se trag ușor spre cursor
      ------------------------------------------------------------------------ */
   (function magnetic() {
     if (reduced || !finePointer) return;
     $$('.btn, .phone-xl, .wa-float, .socials a, .intro__skip').forEach(function (el) {
       el.classList.add('is-magnetic');
-      var cx = 0, cy = 0;
+      var cx = 0, cy = 0, ex = 0, ey = 0, raf = null;
       el.addEventListener('mousemove', function (e) {
+        ex = e.clientX; ey = e.clientY;
+        if (!raf) raf = window.requestAnimationFrame(pull);
+      }, { passive: true });
+      function pull() {
+        raf = null;
         var r = el.getBoundingClientRect();
         var k = r.width > 300 ? 0.08 : (el.classList.contains('phone-xl') ? 0.14 : 0.3);
         // Centrul real, fără deplasarea deja aplicată
-        var x = e.clientX - (r.left - cx + r.width / 2);
-        var y = e.clientY - (r.top - cy + r.height / 2);
+        var x = ex - (r.left - cx + r.width / 2);
+        var y = ey - (r.top - cy + r.height / 2);
         cx = x * k;
         cy = y * k * 1.2;
         el.classList.add('is-pulling');
         el.style.setProperty('--mgx', cx.toFixed(1) + 'px');
         el.style.setProperty('--mgy', cy.toFixed(1) + 'px');
-      });
+      }
       el.addEventListener('mouseleave', function () {
+        if (raf) { window.cancelAnimationFrame(raf); raf = null; }
         cx = cy = 0;
         el.classList.remove('is-pulling');
         el.style.setProperty('--mgx', '0px');
@@ -1216,11 +1231,17 @@
     $$('.feat, .price-card, .review, .fleet, .doc, .step__body, .info-card, .age, .faq__item, .trust__item')
       .forEach(function (el) {
         el.classList.add('spot');
+        var ex = 0, ey = 0, raf = null;
         el.addEventListener('mousemove', function (e) {
-          var r = el.getBoundingClientRect();
-          el.style.setProperty('--sx', (e.clientX - r.left).toFixed(0) + 'px');
-          el.style.setProperty('--sy', (e.clientY - r.top).toFixed(0) + 'px');
-        });
+          ex = e.clientX; ey = e.clientY;
+          if (raf) return;
+          raf = window.requestAnimationFrame(function () {
+            raf = null;
+            var r = el.getBoundingClientRect();
+            el.style.setProperty('--sx', (ex - r.left).toFixed(0) + 'px');
+            el.style.setProperty('--sy', (ey - r.top).toFixed(0) + 'px');
+          });
+        }, { passive: true });
       });
   })();
 })();

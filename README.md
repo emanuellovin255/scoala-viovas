@@ -117,7 +117,7 @@ Antetul și subsolul sunt copiate identic în fiecare pagină. Dacă modifici un
 - **Drumul spre permis**: o mașinuță văzută de sus coboară pe traseu odată cu derularea și aprinde fiecare etapă.
 - **Filmarea de prezentare** se extinde până la marginile ecranului când ajunge în centru.
 - **Semafor** pe benzile de contact: roșu, apoi verde, iar butonul „pornește".
-- Peste tot: titluri care urcă pe cuvinte, cursor personalizat și butoane magnetice (doar pe mouse), carduri cu lumină care urmărește cursorul, vitezometru fix care arată viteza de derulare (click = înapoi sus), bară de progres, tranziții animate între pagini, granulație de film, wordmark „VIOVAS" uriaș în subsol, drum în perspectivă pe paginile interioare.
+- Peste tot: titluri care urcă pe cuvinte, butoane magnetice (doar pe mouse; cursorul rămâne cel al sistemului, fără întârziere), carduri cu lumină care urmărește cursorul, vitezometru fix care arată viteza de derulare (click = înapoi sus), bară de progres, tranziții animate între pagini, granulație de film (statică), wordmark „VIOVAS" uriaș în subsol, drum în perspectivă pe paginile interioare.
 
 Toate filmările pornesc pe mut, cu buton de sunet. Meniu mobil pe tot ecranul, bară fixă de acțiuni pe telefon (Sună / WhatsApp / Înscrie-te).
 
@@ -127,7 +127,7 @@ Toate filmările pornesc pe mut, cu buton de sunet. Meniu mobil pe tot ecranul, 
 
 **Accesibilitate** — toate cele 7 pagini validează fără erori la W3C, contrast AA, navigare completă de la tastatură, `prefers-reduced-motion`, etichete și mesaje de eroare legate corect în formular.
 
-> **Cache:** `.htaccess` ține CSS, JS, imaginile și filmările în cache un an. Când modifici `style.css`, `main.js` sau suprascrii o imagine/filmare păstrându-i numele, urcă versiunea din link-uri (`?v=2` → `?v=3`) în toate paginile, altfel vizitatorii vechi rămân cu fișierele din cache.
+> **Cache:** `.htaccess` ține CSS, JS, imaginile și filmările în cache un an. Când modifici `style.css`, `main.js` sau suprascrii o imagine/filmare păstrându-i numele, urcă versiunea din link-uri (`?v=5` → `?v=6`) în toate paginile, altfel vizitatorii vechi rămân cu fișierele din cache.
 
 **Performanță** — un singur CSS și un singur JS, zero dependențe externe, fonturi self-hosted (fără Google Fonts), imagini WebP cu fallback JPEG/PNG prin `<picture>`, video amânat. Toate efectele de derulare trec printr-o singură buclă `requestAnimationFrame` care nu citește layout în fiecare cadru. Filmările din panourile de categorii se descarcă doar când panoul devine activ, și deloc dacă vizitatorul are activată economisirea de date. Sub „reduce motion" nu se mișcă nimic singur.
 
